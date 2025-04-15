@@ -9,6 +9,12 @@ SwiftMarketingKit is a collection of UI components for iOS apps, designed to hel
 - Pure SwiftUI implementation
 - iOS 16.0+ support
 
+## Examples
+
+Check out the [Examples](Examples/) directory for sample projects that demonstrate how to use SwiftMarketingKit in your apps:
+
+- [OnboardingExample](Examples/OnboardingExample/): Shows how to implement and customize the onboarding flow
+
 ## Installation
 
 ### Swift Package Manager
