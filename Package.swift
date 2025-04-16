@@ -22,11 +22,17 @@ let package = Package(
         .library(
             name: "RatingsManager",
             targets: ["RatingsManager"]),
+        .library(
+            name: "CreditsManager",
+            targets: ["CreditsManager"]),
+        .library(
+            name: "SubscribeManager",
+            targets: ["SubscribeManager"]),
         
     ],
     dependencies: [
-        // No external dependencies currently
-    ],
+            .package(url: "https://github.com/RevenueCat/purchases-ios.git", from: "4.31.6")
+        ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
@@ -43,6 +49,15 @@ let package = Package(
         .target(
             name: "RatingsManager",
             dependencies: ["EmailSupport"]),
+        .target(
+            name: "CreditsManager",
+            dependencies: ["EmailSupport"]),
+        .target(
+            name: "SubscribeManager",
+            dependencies: [
+                .product(name: "RevenueCat", package: "purchases-ios"),
+                .product(name: "RevenueCatUI", package: "purchases-ios")
+            ]),
         .testTarget(
             name: "OnboardingTests",
             dependencies: ["Onboarding"])
