@@ -38,17 +38,17 @@ public struct CountdownTimer: View {
     
     public var body: some View {
         HStack(spacing: 4) {
-            CountdownUnit(value: floor(remainingSeconds / 3600), unit: "hours".localized)
+            CountdownUnit(value: floor(remainingSeconds / 3600), unit: "hours")
             Text(":")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
-            CountdownUnit(value: floor(Double(Int(remainingSeconds) % 3600) / 60), unit: "min".localized)
+            CountdownUnit(value: floor(Double(Int(remainingSeconds) % 3600) / 60), unit: "min")
             Text(":")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
-            CountdownUnit(value: Double(Int(remainingSeconds) % 60), unit: "sec".localized)
+            CountdownUnit(value: Double(Int(remainingSeconds) % 60), unit: "sec")
         }
     }
 }
@@ -60,7 +60,7 @@ public struct CountdownTimer: View {
 struct CountdownTimer_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            CountdownUnit(value: 12, unit: "hours".localized)
+            CountdownUnit(value: 12, unit: "hours")
             
             CountdownTimer(remainingSeconds: 3661) // 1 hour, 1 minute, 1 second
         }

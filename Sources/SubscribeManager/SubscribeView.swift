@@ -11,23 +11,21 @@ import RevenueCat
 import RevenueCatUI
 import Foundation
 import Combine
-import ComposableArchitecture
 
 public struct SubscribeView: View {
-    @Bindable var store: StoreOf<SubscribeReducer>
+    @ObservedObject var viewModel: SubscribeViewModel
     @Environment(\.dismiss) var dismiss
     
     public init() {
-        self.store = Store(initialState: .init()) {
-            SubscribeReducer()
-        }
+        self.viewModel = SubscribeViewModel()
+        self.viewModel.onDismiss = { [self] in dismiss() }
     }
     
     // Helper method for purchasing current plan
-    private func purchaseCurrentPlan() {
-        if let selectedPackage = store.selectedPackage {
+    private func purchaseCurrentPlan() async {
+        if let selectedPackage = viewModel.selectedPackage {
             // Use the product identifier from the selected package
-            store.send(.purchaseSubscription(selectedPackage.storeProduct.productIdentifier))
+            await viewModel.purchaseSubscription(selectedPackage.storeProduct.productIdentifier)
         }
     }
     
@@ -35,13 +33,13 @@ public struct SubscribeView: View {
     private func getPackageTitle(_ package: Package) -> String {
         switch package.packageType {
         case .weekly:
-            return store.freeTrialEnabled ? String(format: "free_trial_days".localized, 3) : "weekly".localized
+            return viewModel.freeTrialEnabled ? "3-Day Free Trial" : "Weekly"
         case .monthly:
-            return "monthly".localized
+            return "Monthly"
         case .annual:
-            return "yearly".localized
+            return "Yearly"
         case .lifetime:
-            return "lifetime_access".localized
+            return "Lifetime Access"
         default:
             return package.identifier
         }
@@ -49,8 +47,8 @@ public struct SubscribeView: View {
     
     private func getPackagePrice(_ package: Package) -> String {
         let price = package.storeProduct.localizedPriceString
-        if package.packageType == .weekly && store.freeTrialEnabled {
-            return String(format: "then".localized, price)
+        if package.packageType == .weekly && viewModel.freeTrialEnabled {
+            return "then \(price)"
         }
         return price
     }
@@ -58,11 +56,11 @@ public struct SubscribeView: View {
     private func getPackagePeriod(_ package: Package) -> String {
         switch package.packageType {
         case .weekly:
-            return "per_week".localized
+            return "per week"
         case .monthly:
-            return "per_month".localized
+            return "per month"
         case .annual:
-            return "per_year".localized
+            return "per year"
         case .lifetime:
             return ""
         default:
@@ -71,7 +69,7 @@ public struct SubscribeView: View {
     }
     
     private func getYearlySubtitle(_ package: Package) -> String {
-        return String(format: "per_year_price".localized, package.storeProduct.localizedPriceString)
+        return "\(package.storeProduct.localizedPriceString) per year"
     }
     
     private func getWeeklyPrice(_ package: Package) -> String? {
@@ -105,7 +103,7 @@ public struct SubscribeView: View {
                     VStack(spacing: 24) {
                         headerView
                         
-                        if store.isPremium {
+                        if viewModel.isPremium {
                             premiumStatusView
                         } else {
                             featuresView
@@ -114,7 +112,7 @@ public struct SubscribeView: View {
                     .padding()
                 }
                 
-                if store.isLoading {
+                if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(1.5)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -125,7 +123,7 @@ public struct SubscribeView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        dismiss()
+                        viewModel.dismiss()
                     } label: {
                         Image(systemName: "xmark")
                     }
@@ -136,12 +134,15 @@ public struct SubscribeView: View {
                 VStack(spacing: 12) {
                     // Free trial toggle
                     HStack {
-                        Text("enable_free_trial".localized)
+                        Text("Enable Free Trial")
                             .font(.subheadline)
                         
                         Spacer()
                         
-                        Toggle("", isOn: $store.freeTrialEnabled)
+                        Toggle("", isOn: Binding(
+                            get: { viewModel.freeTrialEnabled },
+                            set: { viewModel.toggleFreeTrial($0) }
+                        ))
                             .labelsHidden()
                         
                     }
@@ -150,9 +151,9 @@ public struct SubscribeView: View {
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(24)
                     
-                    if store.availablePackages.isEmpty {
+                    if viewModel.availablePackages.isEmpty {
                         // Show loading or error state when no packages are available
-                        Text("loading_subscription_options".localized)
+                        Text("Loading subscription options...")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .padding()
@@ -162,11 +163,11 @@ public struct SubscribeView: View {
                     } else {
                         
                         // Dynamic subscription plans from RevenueCat
-                        ForEach(store.availablePackages, id: \.identifier) { package in
+                        ForEach(viewModel.availablePackages, id: \.identifier) { package in
                             let isWeekly = package.packageType == .weekly
                             let isYearly = package.packageType == .annual
                             let isLifeTime = package.packageType == .lifetime
-                            let isSelected = store.selectedPackageIdentifier == package.identifier
+                            let isSelected = viewModel.selectedPackageIdentifier == package.identifier
                             
                             SubscriptionPlanCard(
                                 title: getPackageTitle(package),
@@ -175,13 +176,13 @@ public struct SubscribeView: View {
                                 period: getPackagePeriod(package),
                                 perWeekPrice: isYearly ? getWeeklyPrice(package) : nil,
                                 isSelected: isSelected,
-                                hasTrial: isWeekly && store.freeTrialEnabled,
+                                hasTrial: isWeekly && viewModel.freeTrialEnabled,
                                 showPricePerPeriod: !isYearly && !isLifeTime,
                                 trialDays: 3,
                                 isBestValue: isYearly,
-                                lifetimeOfferStore: isLifeTime ? store.scope(state: \.lifetimeOffer, action: \.lifetimeOffer) : nil,
+                                lifetimeOfferViewModel: isLifeTime ? viewModel.lifetimeOfferViewModel : nil,
                                 action: {
-                                    store.send(.selectPlan(package.identifier))
+                                    viewModel.selectPlan(package.identifier)
                                 }
                             )
                         }
@@ -189,9 +190,11 @@ public struct SubscribeView: View {
                     
                     // Subscribe button with gradient
                     Button {
-                        purchaseCurrentPlan()
+                        Task {
+                            await purchaseCurrentPlan()
+                        }
                     } label: {
-                        Text("continue".localized)
+                        Text("Continue")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
@@ -199,11 +202,11 @@ public struct SubscribeView: View {
                             .background(
                                 Color.red
                                 .cornerRadius(24)
-                                .opacity(store.selectedPackage == nil || store.isPremium ? 0.5 : 1.0)
+                                .opacity(viewModel.selectedPackage == nil || viewModel.isPremium ? 0.5 : 1.0)
                             )
                             .foregroundColor(.white)
                     }
-                    .disabled(store.selectedPackage == nil || store.isPremium || store.isLoading)
+                    .disabled(viewModel.selectedPackage == nil || viewModel.isPremium || viewModel.isLoading)
                     
                     // Subscription info text
     //                Text("Any active subscription will be refunded.\nCancel any time.")
@@ -212,8 +215,10 @@ public struct SubscribeView: View {
     //                    .multilineTextAlignment(.center)
                     
                     // Restore purchases text button
-                    Button("restore_purchases".localized) {
-                        store.send(.restorePurchases)
+                    Button("Restore Purchases") {
+                        Task {
+                            await viewModel.restorePurchases()
+                        }
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -222,7 +227,10 @@ public struct SubscribeView: View {
                 .background(Color(UIColor.systemBackground))
             }
             .onAppear {
-                store.send(.onAppear)
+                Task {
+                    await viewModel.onAppear()
+                }
+                viewModel.onDismiss = { dismiss() }
             }
             .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
             
@@ -242,7 +250,7 @@ public struct SubscribeView: View {
             HStack(spacing: 10) {
                 AppIconView()
 
-                Text(store.isPremium ? "premium_features".localized : "unlock_premium_features".localized)
+                Text(viewModel.isPremium ? "Premium Features" : "Unlock Premium Features")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
@@ -287,7 +295,7 @@ public struct SubscribeView: View {
     
     private var featuresView: some View {
         VStack(spacing: 8) {
-            Text("premium_features".localized)
+            Text("Premium Features")
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -295,23 +303,23 @@ public struct SubscribeView: View {
                 .padding(.top, 8)
             
             FeatureRow(icon: "bookmark.circle.fill", 
-                      title: "feature_bookmark_insights".localized, 
-                      description: "feature_bookmark_insights_desc".localized,
+                      title: "Bookmark Insights", 
+                      description: "Save and organize your favorite insights",
                       showDescription: false)
             
             FeatureRow(icon: "infinity.circle.fill", 
-                      title: "feature_unlimited_summaries".localized, 
-                      description: "feature_unlimited_summaries_desc".localized,
+                      title: "Unlimited Summaries", 
+                      description: "Create as many summaries as you need",
                       showDescription: false)
             
             FeatureRow(icon: "list.bullet.rectangle.fill", 
-                      title: "feature_section_summaries".localized, 
-                      description: "feature_section_summaries_desc".localized,
+                      title: "Section Summaries", 
+                      description: "Get summaries of specific video sections",
                       showDescription: false)
             
             FeatureRow(icon: "rectangle.stack.fill.badge.play.fill", 
-                      title: "feature_youtube_sync".localized, 
-                      description: "feature_youtube_sync_desc".localized,
+                      title: "YouTube Sync", 
+                      description: "Automatically sync with your YouTube account",
                       showDescription: false)
         }
         .padding(.vertical, 8)
@@ -382,7 +390,7 @@ struct SubscriptionPlanCard: View {
     let showPricePerPeriod: Bool
     let trialDays: Int
     let isBestValue: Bool
-    let lifetimeOfferStore: StoreOf<LifetimeOfferReducer>?
+    let lifetimeOfferViewModel: LifetimeOfferViewModel?
     let action: () -> Void
     
     var body: some View {
@@ -429,13 +437,9 @@ struct SubscriptionPlanCard: View {
                         Spacer()
                         
                         // Show countdown timer for lifetime offer if available
-                        if let store = lifetimeOfferStore, store.isOfferAvailable, store.remainingSeconds > 0 {
-                            
-                            Text(formatTimeRemaining(store.remainingSeconds))
-                                .multilineTextAlignment(.center)
-                                .fontWeight(.semibold)
-                                .padding(.top, 2)
-                                .foregroundColor(.red)
+                        if let lifetimeOfferViewModel = lifetimeOfferViewModel, lifetimeOfferViewModel.isOfferAvailable {
+                            CountdownTimer(remainingSeconds: lifetimeOfferViewModel.remainingSeconds)
+                                .padding(.top, 4)
                         }
                         
                         if showPricePerPeriod {
@@ -493,7 +497,7 @@ struct SubscriptionPlanCard: View {
         showPricePerPeriod: Bool = true,
         trialDays: Int = 0,
         isBestValue: Bool = false,
-        lifetimeOfferStore: StoreOf<LifetimeOfferReducer>? = nil,
+        lifetimeOfferViewModel: LifetimeOfferViewModel? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -506,7 +510,7 @@ struct SubscriptionPlanCard: View {
         self.showPricePerPeriod = showPricePerPeriod
         self.trialDays = trialDays
         self.isBestValue = isBestValue
-        self.lifetimeOfferStore = lifetimeOfferStore
+        self.lifetimeOfferViewModel = lifetimeOfferViewModel
         self.action = action
     }
 }
@@ -526,9 +530,9 @@ func formatTimeRemaining(_ seconds: Double) -> String {
     let seconds = Int(seconds) % 60
     
     if hours > 0 {
-        return String(format: "%@ \n%dh %02dm %02ds", "offer_ends_in".localized, hours, minutes, seconds)
+        return String(format: "%@ \n%dh %02dm %02ds", "Offer Ends In", hours, minutes, seconds)
     } else {
-        return String(format: "%@ \n%dm %02ds", "offer_ends_in".localized, minutes, seconds)
+        return String(format: "%@ \n%dm %02ds", "Offer Ends In", minutes, seconds)
     }
 }
 
@@ -617,7 +621,7 @@ class MockRevenueCatService {
 
 // Preview version of SubscribeView that uses mocks
 //struct SubscribeView_Preview: View {
-//    @Bindable var store: StoreOf<SubscribeReducer>
+//    @ObservedObject var viewModel: SubscribeViewModel
 //    
 //    init(isPremium: Bool = false) {
 //        self.store = Store(initialState: .init(isPremium: isPremium)) {
