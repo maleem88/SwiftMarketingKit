@@ -98,7 +98,10 @@ public class SubscribeViewModel: ObservableObject {
     }
     
     // Load offerings from RevenueCat
+    
+    @MainActor
     public func loadOfferings() async {
+        
         isLoading = true
         
         do {
@@ -136,6 +139,7 @@ public class SubscribeViewModel: ObservableObject {
     }
     
     // Check premium status
+    @MainActor
     public func checkPremiumStatus() async {
         do {
             isPremium = try await revenueCatClient.checkPremiumStatus()
@@ -211,6 +215,7 @@ public class SubscribeViewModel: ObservableObject {
     }
     
     // Check lifetime offer availability
+    @MainActor
     public func checkLifetimeOfferAvailability() async {
         // Check if lifetime offer is available based on first launch date
         isLifetimeOfferAvailable = AppFirstLaunch.isLifetimeOfferAvailable()

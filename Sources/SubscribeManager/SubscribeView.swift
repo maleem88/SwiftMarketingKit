@@ -12,6 +12,7 @@ import RevenueCatUI
 import Foundation
 import Combine
 
+
 public struct SubscribeView: View {
     @ObservedObject var viewModel: SubscribeViewModel
     @Environment(\.dismiss) var dismiss
@@ -302,25 +303,12 @@ public struct SubscribeView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
             
-            FeatureRow(icon: "bookmark.circle.fill", 
-                      title: "Bookmark Insights", 
-                      description: "Save and organize your favorite insights",
-                      showDescription: false)
-            
-            FeatureRow(icon: "infinity.circle.fill", 
-                      title: "Unlimited Summaries", 
-                      description: "Create as many summaries as you need",
-                      showDescription: false)
-            
-            FeatureRow(icon: "list.bullet.rectangle.fill", 
-                      title: "Section Summaries", 
-                      description: "Get summaries of specific video sections",
-                      showDescription: false)
-            
-            FeatureRow(icon: "rectangle.stack.fill.badge.play.fill", 
-                      title: "YouTube Sync", 
-                      description: "Automatically sync with your YouTube account",
-                      showDescription: false)
+            ForEach(SubscribeFeature.defaultFeatures) { feature in
+                FeatureRow(icon: feature.icon, 
+                          title: feature.title, 
+                          description: feature.description,
+                          showDescription: false)
+            }
         }
         .padding(.vertical, 8)
         .background(
