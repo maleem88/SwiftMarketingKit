@@ -12,6 +12,7 @@ import Combine
 public class CreditViewModel: ObservableObject {
     // MARK: - Properties
     private let creditClient: CreditClient
+    private let config: CreditsManagerConfig
     
     // MARK: - Published State
     @Published public var remainingCredits: Int = 0
@@ -23,8 +24,9 @@ public class CreditViewModel: ObservableObject {
     @Published public var lastConsumeAttempt: Int = 0
     
     // MARK: - Initialization
-    public init(creditClient: CreditClient = .live()) {
+    public init(creditClient: CreditClient = .live(), config: CreditsManagerConfig = CreditsManagerConfig.shared) {
         self.creditClient = creditClient
+        self.config = config
         refreshCreditStatus()
     }
     
@@ -68,12 +70,35 @@ public class CreditViewModel: ObservableObject {
     // MARK: - Helper Methods
     public var creditColor: Color {
         let percentage = Double(remainingCredits) / Double(max(1, totalCredits))
-        if percentage > 0.6 {
-            return .green
-        } else if percentage > 0.3 {
-            return .orange
-        } else {
-            return .red
-        }
+        return config.getCreditColor(for: percentage)
+    }
+    
+    // Get the title for the credits display
+    public var creditsTitleText: String {
+        return config.getCreditsTitleText()
+    }
+    
+    // Get the title for the history section
+    public var historyTitleText: String {
+        return config.getHistoryTitleText()
+    }
+    
+    // Check if history section should be shown
+    public var shouldShowHistorySection: Bool {
+        return config.shouldShowHistorySection() && !creditHistory.isEmpty
+    }
+    
+    // Get max number of history items to display
+    public var maxHistoryItems: Int {
+        return config.getMaxHistoryItems()
+    }
+    
+    // Get the formatted insufficient credits alert message
+    public func getInsufficientCreditsAlertMessage() -> String {
+        let message = config.getInsufficientCreditsAlertMessage()
+        return message
+            .replacingOccurrences(of: "%@", with: "\(lastConsumeAttempt)", options: [], range: message.range(of: "%@"))
+            .replacingOccurrences(of: "%@", with: "\(remainingCredits)", options: [], range: message.range(of: "%@"))
+            .replacingOccurrences(of: "%@", with: "\(daysUntilRenewal)", options: [], range: message.range(of: "%@"))
     }
 }

@@ -19,7 +19,7 @@ public struct CreditView: View {
             // Credit Status Card
             VStack(spacing: 16) {
                 HStack {
-                    Text("Monthly Credits")
+                    Text(viewModel.creditsTitleText)
                         .font(.title2)
                         .fontWeight(.bold)
                     Spacer()
@@ -74,14 +74,14 @@ public struct CreditView: View {
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
             
             // Credit History Section
-            if !viewModel.creditHistory.isEmpty {
+            if viewModel.shouldShowHistorySection {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Recent Activity")
+                    Text(viewModel.historyTitleText)
                         .font(.headline)
                     
                     Divider()
                     
-                    ForEach(Array(viewModel.creditHistory.prefix(5).enumerated()), id: \.element.id) { index, item in
+                    ForEach(Array(viewModel.creditHistory.prefix(viewModel.maxHistoryItems).enumerated()), id: \.element.id) { index, item in
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(item.description)
@@ -99,7 +99,7 @@ public struct CreditView: View {
                         }
                         .padding(.vertical, 4)
                         
-                        if index < min(4, viewModel.creditHistory.count - 1) {
+                        if index < min(viewModel.maxHistoryItems - 1, viewModel.creditHistory.count - 1) {
                             Divider()
                         }
                     }
@@ -144,12 +144,12 @@ public struct CreditView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .alert("Insufficient Credits", isPresented: $viewModel.showInsufficientCreditsAlert) {
+        .alert(CreditsManagerConfig.shared.getInsufficientCreditsAlertTitle(), isPresented: $viewModel.showInsufficientCreditsAlert) {
             Button("OK", role: .cancel) {
                 viewModel.dismissInsufficientCreditsAlert()
             }
         } message: {
-            Text("You need \(viewModel.lastConsumeAttempt) credits but only have \(viewModel.remainingCredits) remaining. Your credits will renew in \(viewModel.daysUntilRenewal) days.")
+            Text(viewModel.getInsufficientCreditsAlertMessage())
         }
     }
     

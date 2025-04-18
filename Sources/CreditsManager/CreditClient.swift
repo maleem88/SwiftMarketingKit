@@ -10,18 +10,44 @@ import SwiftUI
 
 // MARK: - Credit Client
 
-/// A service that manages the monthly credit system
+/// A service that manages the credit system with configurable renewal periods
 public struct CreditClient {
-    // MARK: - Constants
-    enum Constants {
-        static let totalCreditsKey = "com.supertuber.totalCredits"
-        static let consumedCreditsKey = "com.supertuber.consumedCredits"
-        static let nextRenewalDateKey = "com.supertuber.nextRenewalDate"
-        static let creditHistoryKey = "com.supertuber.creditHistory"
-    }
+    // MARK: - Properties
+    private let config: CreditsManagerConfig
+    
+    // Convenience accessors for UserDefaults keys
+    private var totalCreditsKey: String { config.getTotalCreditsKey() }
+    private var consumedCreditsKey: String { config.getConsumedCreditsKey() }
+    private var nextRenewalDateKey: String { config.getNextRenewalDateKey() }
+    private var creditHistoryKey: String { config.getCreditHistoryKey() }
     
     // MARK: - Configuration Properties
-    public var totalMonthlyCredits: Int
+    private var creditAmount: Int
+    
+    // MARK: - Initialization
+    public init(
+        creditAmount: Int,
+        config: CreditsManagerConfig,
+        consumeCredits: @escaping (Int) -> Bool,
+        getRemainingCredits: @escaping () -> Int,
+        getTotalCredits: @escaping () -> Int,
+        getNextRenewalDate: @escaping () -> Date,
+        getDaysUntilRenewal: @escaping () -> Int,
+        resetCredits: @escaping () -> Void,
+        checkAndRenewCreditsIfNeeded: @escaping () -> Bool,
+        getCreditHistory: @escaping () -> [CreditHistoryItem]
+    ) {
+        self.creditAmount = creditAmount
+        self.config = config
+        self.consumeCredits = consumeCredits
+        self.getRemainingCredits = getRemainingCredits
+        self.getTotalCredits = getTotalCredits
+        self.getNextRenewalDate = getNextRenewalDate
+        self.getDaysUntilRenewal = getDaysUntilRenewal
+        self.resetCredits = resetCredits
+        self.checkAndRenewCreditsIfNeeded = checkAndRenewCreditsIfNeeded
+        self.getCreditHistory = getCreditHistory
+    }
     
     // MARK: - Public Methods
     public var consumeCredits: (Int) -> Bool
@@ -53,67 +79,64 @@ public struct CreditHistoryItem: Codable, Equatable, Identifiable {
 extension CreditClient {
     public static func live(
         userDefaults: UserDefaults = .standard,
-        totalMonthlyCredits: Int = 100,
+        config: CreditsManagerConfig = CreditsManagerConfig.shared,
         resetState: Bool = false
     ) -> Self {
+        let totalCreditsKey = config.getTotalCreditsKey()
+        let consumedCreditsKey = config.getConsumedCreditsKey()
+        let nextRenewalDateKey = config.getNextRenewalDateKey()
+        let creditHistoryKey = config.getCreditHistoryKey()
+        
         // Reset state if requested
         if resetState {
-            userDefaults.removeObject(forKey: Constants.totalCreditsKey)
-            userDefaults.removeObject(forKey: Constants.consumedCreditsKey)
-            userDefaults.removeObject(forKey: Constants.nextRenewalDateKey)
-            userDefaults.removeObject(forKey: Constants.creditHistoryKey)
+            userDefaults.removeObject(forKey: totalCreditsKey)
+            userDefaults.removeObject(forKey: consumedCreditsKey)
+            userDefaults.removeObject(forKey: nextRenewalDateKey)
+            userDefaults.removeObject(forKey: creditHistoryKey)
         }
         
         // Initialize total credits if not set
-        if userDefaults.object(forKey: Constants.totalCreditsKey) == nil {
-            userDefaults.set(totalMonthlyCredits, forKey: Constants.totalCreditsKey)
+        if userDefaults.object(forKey: totalCreditsKey) == nil {
+            userDefaults.set(config.getCreditAmount(), forKey: totalCreditsKey)
         }
         
         // Initialize consumed credits if not set
-        if userDefaults.object(forKey: Constants.consumedCreditsKey) == nil {
-            userDefaults.set(0, forKey: Constants.consumedCreditsKey)
+        if userDefaults.object(forKey: consumedCreditsKey) == nil {
+            userDefaults.set(0, forKey: consumedCreditsKey)
         }
         
         // Initialize next renewal date if not set
-        if userDefaults.object(forKey: Constants.nextRenewalDateKey) == nil {
-            // Set next renewal date to first day of next month
-            let calendar = Calendar.current
-            var components = calendar.dateComponents([.year, .month], from: Date())
-            components.month = (components.month ?? 1) + 1
-            components.day = 1
-            components.hour = 0
-            components.minute = 0
-            components.second = 0
-            
-            if let nextRenewalDate = calendar.date(from: components) {
-                userDefaults.set(nextRenewalDate, forKey: Constants.nextRenewalDateKey)
-            }
+        if userDefaults.object(forKey: nextRenewalDateKey) == nil {
+            // Calculate next renewal date based on configured period
+            let nextRenewalDate = config.calculateNextRenewalDate()
+            userDefaults.set(nextRenewalDate, forKey: nextRenewalDateKey)
         }
         
         // Initialize credit history if not set
-        if userDefaults.object(forKey: Constants.creditHistoryKey) == nil {
+        if userDefaults.object(forKey: creditHistoryKey) == nil {
             let emptyHistory: [CreditHistoryItem] = []
             if let encoded = try? JSONEncoder().encode(emptyHistory) {
-                userDefaults.set(encoded, forKey: Constants.creditHistoryKey)
+                userDefaults.set(encoded, forKey: creditHistoryKey)
             }
         }
         
         return Self(
-            totalMonthlyCredits: totalMonthlyCredits,
+            creditAmount: config.getCreditAmount(),
+            config: config,
             
             consumeCredits: { amount in
                 // First check if renewal is needed
-                let renewalOccurred = checkAndRenewCreditsIfNeeded(userDefaults: userDefaults)
+                let renewalOccurred = checkAndRenewCreditsIfNeeded(userDefaults: userDefaults, config: config)
                 
-                let consumedCredits = userDefaults.integer(forKey: Constants.consumedCreditsKey)
-                let totalCredits = userDefaults.integer(forKey: Constants.totalCreditsKey)
+                let consumedCredits = userDefaults.integer(forKey: config.getConsumedCreditsKey())
+                let totalCredits = userDefaults.integer(forKey: config.getTotalCreditsKey())
                 
                 // Check if enough credits are available
                 if consumedCredits + amount <= totalCredits {
-                    userDefaults.set(consumedCredits + amount, forKey: Constants.consumedCreditsKey)
+                    userDefaults.set(consumedCredits + amount, forKey: config.getConsumedCreditsKey())
                     
                     // Add to history
-                    if let historyData = userDefaults.data(forKey: Constants.creditHistoryKey),
+                    if let historyData = userDefaults.data(forKey: config.getCreditHistoryKey()),
                        var history = try? JSONDecoder().decode([CreditHistoryItem].self, from: historyData) {
                         let newItem = CreditHistoryItem(amount: amount, description: "Credit consumed")
                         history.append(newItem)
@@ -122,7 +145,7 @@ extension CreditClient {
                             history = Array(history.suffix(50))
                         }
                         if let encoded = try? JSONEncoder().encode(history) {
-                            userDefaults.set(encoded, forKey: Constants.creditHistoryKey)
+                            userDefaults.set(encoded, forKey: config.getCreditHistoryKey())
                         }
                     }
                     
@@ -133,38 +156,30 @@ extension CreditClient {
             
             getRemainingCredits: {
                 // Check if renewal is needed
-                let renewalOccurred = checkAndRenewCreditsIfNeeded(userDefaults: userDefaults)
+                let renewalOccurred = checkAndRenewCreditsIfNeeded(userDefaults: userDefaults, config: config)
                 
-                let consumedCredits = userDefaults.integer(forKey: Constants.consumedCreditsKey)
-                let totalCredits = userDefaults.integer(forKey: Constants.totalCreditsKey)
+                let consumedCredits = userDefaults.integer(forKey: config.getConsumedCreditsKey())
+                let totalCredits = userDefaults.integer(forKey: config.getTotalCreditsKey())
                 return totalCredits - consumedCredits
             },
             
             getTotalCredits: {
-                return userDefaults.integer(forKey: Constants.totalCreditsKey)
+                return userDefaults.integer(forKey: config.getTotalCreditsKey())
             },
             
             getNextRenewalDate: {
-                if let nextRenewalDate = userDefaults.object(forKey: Constants.nextRenewalDateKey) as? Date {
+                if let nextRenewalDate = userDefaults.object(forKey: config.getNextRenewalDateKey()) as? Date {
                     return nextRenewalDate
                 }
                 
                 // If not set, calculate and set it
-                let calendar = Calendar.current
-                var components = calendar.dateComponents([.year, .month], from: Date())
-                components.month = (components.month ?? 1) + 1
-                components.day = 1
-                components.hour = 0
-                components.minute = 0
-                components.second = 0
-                
-                let nextRenewalDate = calendar.date(from: components) ?? Date()
-                userDefaults.set(nextRenewalDate, forKey: Constants.nextRenewalDateKey)
+                let nextRenewalDate = config.calculateNextRenewalDate()
+                userDefaults.set(nextRenewalDate, forKey: config.getNextRenewalDateKey())
                 return nextRenewalDate
             },
             
             getDaysUntilRenewal: {
-                if let nextRenewalDate = userDefaults.object(forKey: Constants.nextRenewalDateKey) as? Date {
+                if let nextRenewalDate = userDefaults.object(forKey: config.getNextRenewalDateKey()) as? Date {
                     let calendar = Calendar.current
                     let components = calendar.dateComponents([.day], from: Date(), to: nextRenewalDate)
                     return max(0, components.day ?? 0)
@@ -173,8 +188,8 @@ extension CreditClient {
             },
             
             resetCredits: {
-                let totalCredits = userDefaults.integer(forKey: Constants.totalCreditsKey)
-                userDefaults.set(0, forKey: Constants.consumedCreditsKey)
+                let totalCredits = userDefaults.integer(forKey: config.getTotalCreditsKey())
+                userDefaults.set(0, forKey: config.getConsumedCreditsKey())
                 
 //                // Calculate next renewal date
 //                let calendar = Calendar.current
@@ -198,27 +213,24 @@ extension CreditClient {
             },
             
             checkAndRenewCreditsIfNeeded: {
-                if let nextRenewalDate = userDefaults.object(forKey: Constants.nextRenewalDateKey) as? Date {
+                if let nextRenewalDate = userDefaults.object(forKey: config.getNextRenewalDateKey()) as? Date {
                     if Date() >= nextRenewalDate {
                         // Reset consumed credits
-                        userDefaults.set(0, forKey: Constants.consumedCreditsKey)
+                        userDefaults.set(0, forKey: config.getConsumedCreditsKey())
                         
-                        // Calculate next renewal date
-                        let calendar = Calendar.current
-                        var components = DateComponents()
-                        components.month = 1
-                        if let newRenewalDate = calendar.date(byAdding: components, to: nextRenewalDate) {
-                            userDefaults.set(newRenewalDate, forKey: Constants.nextRenewalDateKey)
-                        }
+                        // Calculate next renewal date based on configured period
+                        let newRenewalDate = config.calculateNextRenewalDate(from: nextRenewalDate)
+                        userDefaults.set(newRenewalDate, forKey: config.getNextRenewalDateKey())
                         
                         // Add to history
-                        if let historyData = userDefaults.data(forKey: Constants.creditHistoryKey),
+                        if let historyData = userDefaults.data(forKey: config.getCreditHistoryKey()),
                            var history = try? JSONDecoder().decode([CreditHistoryItem].self, from: historyData) {
-                            let totalCredits = userDefaults.integer(forKey: Constants.totalCreditsKey)
-                            let newItem = CreditHistoryItem(amount: totalCredits, description: "Credits renewed")
+                            let totalCredits = userDefaults.integer(forKey: config.getTotalCreditsKey())
+                            let renewalDescription = "\(config.getRenewalPeriodDescription()) credits renewed"
+                            let newItem = CreditHistoryItem(amount: totalCredits, description: renewalDescription)
                             history.append(newItem)
                             if let encoded = try? JSONEncoder().encode(history) {
-                                userDefaults.set(encoded, forKey: Constants.creditHistoryKey)
+                                userDefaults.set(encoded, forKey: config.getCreditHistoryKey())
                             }
                         }
                         
@@ -229,7 +241,7 @@ extension CreditClient {
             },
             
             getCreditHistory: {
-                if let historyData = userDefaults.data(forKey: Constants.creditHistoryKey),
+                if let historyData = userDefaults.data(forKey: config.getCreditHistoryKey()),
                    let history = try? JSONDecoder().decode([CreditHistoryItem].self, from: historyData) {
                     return history
                 }
@@ -239,28 +251,25 @@ extension CreditClient {
     }
     
     // Helper function for checking renewal
-    private static func checkAndRenewCreditsIfNeeded(userDefaults: UserDefaults) -> Bool {
-        if let nextRenewalDate = userDefaults.object(forKey: Constants.nextRenewalDateKey) as? Date {
+    private static func checkAndRenewCreditsIfNeeded(userDefaults: UserDefaults, config: CreditsManagerConfig) -> Bool {
+        if let nextRenewalDate = userDefaults.object(forKey: config.getNextRenewalDateKey()) as? Date {
             if Date() >= nextRenewalDate {
                 // Reset consumed credits
-                userDefaults.set(0, forKey: Constants.consumedCreditsKey)
+                userDefaults.set(0, forKey: config.getConsumedCreditsKey())
                 
-                // Calculate next renewal date
-                let calendar = Calendar.current
-                var components = DateComponents()
-                components.month = 1
-                if let newRenewalDate = calendar.date(byAdding: components, to: nextRenewalDate) {
-                    userDefaults.set(newRenewalDate, forKey: Constants.nextRenewalDateKey)
-                }
+                // Calculate next renewal date based on configured period
+                let newRenewalDate = config.calculateNextRenewalDate(from: nextRenewalDate)
+                userDefaults.set(newRenewalDate, forKey: config.getNextRenewalDateKey())
                 
                 // Add to history
-                if let historyData = userDefaults.data(forKey: Constants.creditHistoryKey),
+                if let historyData = userDefaults.data(forKey: config.getCreditHistoryKey()),
                    var history = try? JSONDecoder().decode([CreditHistoryItem].self, from: historyData) {
-                    let totalCredits = userDefaults.integer(forKey: Constants.totalCreditsKey)
-                    let newItem = CreditHistoryItem(amount: totalCredits, description: "Credits renewed")
+                    let totalCredits = userDefaults.integer(forKey: config.getTotalCreditsKey())
+                    let renewalDescription = "\(config.getRenewalPeriodDescription()) credits renewed"
+                    let newItem = CreditHistoryItem(amount: totalCredits, description: renewalDescription)
                     history.append(newItem)
                     if let encoded = try? JSONEncoder().encode(history) {
-                        userDefaults.set(encoded, forKey: Constants.creditHistoryKey)
+                        userDefaults.set(encoded, forKey: config.getCreditHistoryKey())
                     }
                 }
                 
@@ -271,9 +280,10 @@ extension CreditClient {
     }
     
     // Mock implementation for testing
-    public static func mock() -> Self {
+    public static func mock(config: CreditsManagerConfig = CreditsManagerConfig.shared) -> Self {
         Self(
-            totalMonthlyCredits: 100,
+            creditAmount: config.getCreditAmount(),
+            config: config,
             consumeCredits: { _ in true },
             getRemainingCredits: { 50 },
             getTotalCredits: { 100 },
@@ -288,7 +298,7 @@ extension CreditClient {
 
 // MARK: - Factory Methods
 extension CreditClient {
-    public static func live(totalMonthlyCredits: Int = 100, resetState: Bool = false) -> CreditClient {
-        return CreditClient.live(userDefaults: .standard, totalMonthlyCredits: totalMonthlyCredits, resetState: resetState)
+    public static func live(config: CreditsManagerConfig = CreditsManagerConfig.shared, resetState: Bool = false) -> CreditClient {
+        return CreditClient.live(userDefaults: .standard, config: config, resetState: resetState)
     }
 }
