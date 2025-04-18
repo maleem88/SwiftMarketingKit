@@ -7,6 +7,7 @@
 import RevenueCat
 import Foundation
 
+
 // RevenueCat client class
 public class RevenueCatClient {
     // Singleton instance
@@ -22,7 +23,8 @@ public class RevenueCatClient {
     // Check if user has premium status
     public func checkPremiumStatus() async throws -> Bool {
         let customerInfo = try await Purchases.shared.customerInfo()
-        return customerInfo.entitlements["premium"]?.isActive == true
+        let entitlementId = SubscribeManagerConfig.getEntitlementIdentifier()
+        return customerInfo.entitlements[entitlementId]?.isActive == true
     }
     
     // Purchase a product by ID
@@ -41,7 +43,8 @@ public class RevenueCatClient {
             let purchaseResult = try await Purchases.shared.purchase(package: package)
             
             // Check if premium is active
-            return purchaseResult.customerInfo.entitlements["premium"]?.isActive == true
+            let entitlementId = SubscribeManagerConfig.getEntitlementIdentifier()
+            return purchaseResult.customerInfo.entitlements[entitlementId]?.isActive == true
         } catch {
             throw error
         }
@@ -51,6 +54,7 @@ public class RevenueCatClient {
     public func restore() async throws -> Bool {
         // Restore purchases using async/await
         let customerInfo = try await Purchases.shared.restorePurchases()
-        return customerInfo.entitlements["premium"]?.isActive == true
+        let entitlementId = SubscribeManagerConfig.getEntitlementIdentifier()
+        return customerInfo.entitlements[entitlementId]?.isActive == true
     }
 }

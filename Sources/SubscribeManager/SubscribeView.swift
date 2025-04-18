@@ -201,7 +201,7 @@ public struct SubscribeView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
-                                Color.red
+                                SubscribeManagerConfig.getTintColor()
                                 .cornerRadius(24)
                                 .opacity(viewModel.selectedPackage == nil || viewModel.isPremium ? 0.5 : 1.0)
                             )
@@ -247,16 +247,24 @@ public struct SubscribeView: View {
     
     private var headerView: some View {
 //        VStack(spacing: 12) {
-            
-            HStack(spacing: 10) {
-                AppIconView()
+            Group {
+                if SubscribeManagerConfig.shouldShowIconBesideTitle() {
+                    HStack(spacing: 10) {
+                        AppIconView()
 
-                Text(viewModel.isPremium ? "Premium Features" : "Unlock Premium Features")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                        Text(SubscribeManagerConfig.getSubscribeViewTitle(isPremium: viewModel.isPremium))
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
+                    }
+                } else {
+                    Text(SubscribeManagerConfig.getSubscribeViewTitle(isPremium: viewModel.isPremium))
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
             }
-            
 //            Text("Take your YouTube experience to the next level")
 //                .font(.headline)
 //                .foregroundColor(.secondary)
@@ -296,18 +304,20 @@ public struct SubscribeView: View {
     
     private var featuresView: some View {
         VStack(spacing: 8) {
-            Text("Premium Features")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
+            if SubscribeManagerConfig.shouldShowFeaturesTitle() {
+                Text(SubscribeManagerConfig.getFeaturesTitle())
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+            }
             
-            ForEach(SubscribeFeature.defaultFeatures) { feature in
+            ForEach(SubscribeManagerConfig.getFeatures()) { feature in
                 FeatureRow(icon: feature.icon, 
                           title: feature.title, 
                           description: feature.description,
-                          showDescription: false)
+                          showDescription: SubscribeManagerConfig.shouldShowFeatureDescriptions())
             }
         }
         .padding(.vertical, 8)
@@ -339,7 +349,7 @@ public struct FeatureRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 22))
-                .foregroundColor(.red)
+                .foregroundColor(SubscribeManagerConfig.getTintColor())
                 .frame(width: 24, height: 24)
             
             if showDescription {
@@ -349,7 +359,7 @@ public struct FeatureRow: View {
                         
                     
                     Text(description)
-                        .font(.system(size: 14, weight: .light))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.gray)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -463,10 +473,10 @@ struct SubscriptionPlanCard: View {
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.pink.opacity(0.15) : Color(UIColor.secondarySystemBackground))
+                    .fill(isSelected ? SubscribeManagerConfig.getTintColor().opacity(0.15) : Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(isSelected ? Color.pink : Color.clear, lineWidth: 2)
+                            .strokeBorder(isSelected ? SubscribeManagerConfig.getTintColor() : Color.clear, lineWidth: 2)
                     )
                     .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             )
