@@ -3,6 +3,7 @@ import MessageUI
 import SwiftUI
 import StoreKit
 import UIKit
+import EmailSupport
 
 public class RatingViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -15,26 +16,23 @@ public class RatingViewModel: ObservableObject {
     
     // MARK: - Constants
     private enum Constants {
-        static let firstLaunchDateKey = "com.supertuber.firstLaunchDate"
-        static let lastPromptDateKey = "com.supertuber.lastPromptDate"
-        static let successfulActionCountKey = "com.supertuber.successfulActionCount"
+        static let firstLaunchDateKey = "com.ratings.firstLaunchDate"
+        static let lastPromptDateKey = "com.ratings.lastPromptDate"
+        static let successfulActionCountKey = "com.ratings.successfulActionCount"
     }
     
     // MARK: - Properties
     private let userDefaults: UserDefaults
-    public var minimumDaysBeforePrompting: Int
-    public var minimumActionsBeforePrompting: Int
+    private let config: RatingsManagerConfig
     
     // MARK: - Initialization
     public init(
         userDefaults: UserDefaults = .standard,
-        minimumDaysBeforePrompting: Int = 3,
-        minimumActionsBeforePrompting: Int = 5,
+        config: RatingsManagerConfig = RatingsManagerConfig.shared,
         resetState: Bool = false
     ) {
         self.userDefaults = userDefaults
-        self.minimumDaysBeforePrompting = minimumDaysBeforePrompting
-        self.minimumActionsBeforePrompting = minimumActionsBeforePrompting
+        self.config = config
         
         if resetState {
             self.resetState()
@@ -73,11 +71,11 @@ public class RatingViewModel: ObservableObject {
         // Check if app has been used for minimum number of days
         guard let firstLaunchDate = userDefaults.object(forKey: Constants.firstLaunchDateKey) as? Date else { return false }
         let daysSinceFirstLaunch = Calendar.current.dateComponents([.day], from: firstLaunchDate, to: Date()).day ?? 0
-        guard daysSinceFirstLaunch >= minimumDaysBeforePrompting else { return false }
+        guard daysSinceFirstLaunch >= config.getMinimumDaysBeforePrompting() else { return false }
         
         // Check if user has performed minimum number of successful actions
         let actionCount = userDefaults.integer(forKey: Constants.successfulActionCountKey)
-        guard actionCount >= minimumActionsBeforePrompting else { return false }
+        guard actionCount >= config.getMinimumActionsBeforePrompting() else { return false }
         
         return true
     }
@@ -131,6 +129,22 @@ public class RatingViewModel: ObservableObject {
         }
     }
     
+    /// Get the configured email recipients
+    public func getEmailRecipients() -> [String] {
+        return config.getFeedbackEmailRecipients().isEmpty ? ["feedback@example.com"] : config.getFeedbackEmailRecipients()
+    }
+    
+    /// Get the configured email subject
+    public func getEmailSubject() -> String {
+        return config.getFeedbackEmailSubject()
+    }
+    
+    /// Get the configured email body with device info
+    public func getEmailBody() -> String {
+        let template = config.getFeedbackEmailBodyTemplate()
+        return template.replacingOccurrences(of: "[DEVICE_INFO]", with: DeviceInfoHelper.getDeviceInfo())
+    }
+    
     /// Handle mail sent callback
     public func handleMailSent(_ sent: Bool) {
         isMailViewPresented = false
@@ -143,8 +157,6 @@ public class RatingViewModel: ObservableObject {
 // MARK: - Shared Instance
 extension RatingViewModel {
     public static let shared = RatingViewModel(
-        minimumDaysBeforePrompting: 0,
-        minimumActionsBeforePrompting: 2,
-        resetState: true
+        resetState: false
     )
 }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import EmailSupport
+import UIKit
 
 // MARK: - Navigation View for Examples
 
@@ -49,7 +50,13 @@ public struct RatingsExamplesView: View {
 
 /// This example shows the simplest way to use the RatingsManager in your app
 public struct BasicRatingExample: View {
-    public init() {}
+    public init() {
+        // Configure the RatingsManager with default settings
+        // This is optional as the default configuration works well for most apps
+        RatingsManagerConfig.shared
+            .setAppName("SwiftMarketingKit")
+            .setFeedbackEmailRecipients(["feedback@example.com"])
+    }
     
     public var body: some View {
         VStack(spacing: 20) {
@@ -72,7 +79,7 @@ public struct BasicRatingExample: View {
             // Example button that records a successful action
             Button("Complete Action") {
                 // Use the shared instance to record a successful action
-                RatingClient.shared.recordSuccessfulAction()
+                RatingViewModel.shared.recordSuccessfulAction()
                 // The rating prompt will appear automatically if conditions are met
             }
             .buttonStyle(.borderedProminent)
@@ -95,7 +102,7 @@ public struct BasicRatingExample: View {
             
             // Button to reset rating state (for testing)
             Button("Reset Rating State", role: .destructive) {
-                RatingClient.shared.resetState()
+                RatingViewModel.shared.resetState()
                 print("Rating state has been reset")
             }
             .buttonStyle(.bordered)
@@ -115,13 +122,27 @@ public struct BasicRatingExample: View {
 
 /// This example shows how to use a custom-configured RatingManager
 public struct CustomRatingExample: View {
-    public init() {}
+    // Create a custom configuration for this example
+    private let customConfig = RatingsManagerConfig.shared
     
     // Create a custom-configured instance for immediate testing
     @StateObject private var ratingViewModel = RatingViewModel(
-        minimumDaysBeforePrompting: 0,  // No waiting days for testing
-        minimumActionsBeforePrompting: 3 // Show after just 3 successful actions
+        config: RatingsManagerConfig.shared,
+        resetState: true
     )
+    
+    public init() {
+        // Configure with custom settings for this example
+        customConfig
+            .setMinimumDaysBeforePrompting(0)  // No waiting days for testing
+            .setMinimumActionsBeforePrompting(3) // Show after just 3 successful actions
+            .setAppName("Custom App")
+            .setEnjoymentPromptTitle("Enjoying Custom App?")
+            .setEnjoymentPromptPositiveButtonText("It's Great!")
+            .setEnjoymentPromptNegativeButtonText("Could Be Better")
+            .setFeedbackEmailRecipients(["custom@example.com"])
+            .setFeedbackPromptTitle("We Value Your Input")
+    }
     
     public var body: some View {
         VStack(spacing: 20) {
@@ -131,6 +152,10 @@ public struct CustomRatingExample: View {
             
             Text("Configuration: No waiting days, show after 3 actions")
                 .font(.subheadline)
+                
+            Text("Custom text: \"\(RatingsManagerConfig.shared.getEnjoymentPromptTitle())\"")
+                .font(.caption)
+                .foregroundColor(.secondary)
                 .foregroundColor(.secondary)
                 
             VStack(alignment: .leading, spacing: 4) {
@@ -155,9 +180,9 @@ public struct CustomRatingExample: View {
             // Display current action count
             HStack {
                 Text("Actions completed:")
-                Text("\(UserDefaults.standard.integer(forKey: "com.supertuber.successfulActionCount")) / 3 needed")
+                Text("\(UserDefaults.standard.integer(forKey: "com.ratings.successfulActionCount")) / 3 needed")
                     .bold()
-                    .foregroundColor(UserDefaults.standard.integer(forKey: "com.supertuber.successfulActionCount") >= 3 ? .green : .primary)
+                    .foregroundColor(UserDefaults.standard.integer(forKey: "com.ratings.successfulActionCount") >= 3 ? .green : .primary)
             }
             .font(.headline)
             .padding(.vertical, 8)
@@ -188,35 +213,40 @@ public struct CustomRatingExample: View {
 
 /// This example shows how to integrate RatingsManager with an MVVM architecture
 public class AppViewModel: ObservableObject {
-    public init() {}
-    
     // Properties
     @Published var featureEnabled = false
     @Published var completedTasks = 0
     
+    // Custom configuration for MVVM example
+    private let mvvmConfig = RatingsManagerConfig.shared
+    
     // Rating manager integration with testing-friendly configuration
-    private let ratingClient = RatingClient(
-        minimumDaysBeforePrompting: 0,  // No waiting days for testing
-        minimumActionsBeforePrompting: 3 // Show after just 3 successful actions
-    )
-    let ratingViewModel = RatingViewModel(
-        minimumDaysBeforePrompting: 0,
-        minimumActionsBeforePrompting: 3
-    )
+    let ratingViewModel: RatingViewModel
+    
+    public init() {
+        // Configure with MVVM-specific settings
+        mvvmConfig
+            .setMinimumDaysBeforePrompting(0)  // No waiting days for testing
+            .setMinimumActionsBeforePrompting(3) // Show after just 3 successful actions
+            .setAppName("MVVM App")
+            .setFeedbackEmailSubject("MVVM App Feedback")
+            .setFeedbackPromptMessage("We're constantly improving. Would you mind sharing your thoughts?")
+            .setIncludeFeedbackOption(true)
+        
+        // Initialize the view model with our custom config
+        ratingViewModel = RatingViewModel(config: mvvmConfig, resetState: true)
+    }
     
     // Methods
     func completeTask() {
         completedTasks += 1
         
         // Record successful action when user completes a task
-        ratingClient.recordSuccessfulAction()
-        
-        // You could also use the ViewModel directly
-        // ratingViewModel.recordSuccessfulAction()
+        ratingViewModel.recordSuccessfulAction()
     }
     
     func checkRatingEligibility() -> Bool {
-        return ratingClient.shouldPromptForRating()
+        return ratingViewModel.shouldPromptForRating()
     }
     
     func manuallyTriggerRating() {

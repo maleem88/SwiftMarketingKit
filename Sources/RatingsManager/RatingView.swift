@@ -72,60 +72,54 @@ public struct RatingViewModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content
-            .alert("Do you enjoy using the app?", isPresented: $viewModel.showPrePromptAlert) {
-                Button("Yes, I love it!") {
+            .alert(RatingsManagerConfig.shared.getEnjoymentPromptTitle(), isPresented: $viewModel.showPrePromptAlert) {
+                Button(RatingsManagerConfig.shared.getEnjoymentPromptPositiveButtonText()) {
                     viewModel.requestReview()
                 }
-                Button("Not really") {
-                    viewModel.showFeedbackConfirmation = true
+                
+                if RatingsManagerConfig.shared.getIncludeFeedbackOption() {
+                    Button(RatingsManagerConfig.shared.getEnjoymentPromptNegativeButtonText()) {
+                        viewModel.showFeedbackConfirmation = true
+                    }
                 }
-                Button("Cancel", role: .cancel) {
+                
+                Button(RatingsManagerConfig.shared.getEnjoymentPromptCancelButtonText(), role: .cancel) {
                     viewModel.postponeRating()
                 }
             }
             // Feedback confirmation alert
-            .alert("We'd love your feedback", isPresented: $viewModel.showFeedbackConfirmation) {
-                Button("Send Feedback") {
+            .alert(RatingsManagerConfig.shared.getFeedbackPromptTitle(), isPresented: $viewModel.showFeedbackConfirmation) {
+                Button(RatingsManagerConfig.shared.getFeedbackPromptPositiveButtonText()) {
                     viewModel.showEmailFeedback()
                 }
-                Button("Cancel", role: .cancel) {
+                Button(RatingsManagerConfig.shared.getFeedbackPromptCancelButtonText(), role: .cancel) {
                     viewModel.showFeedbackConfirmation = false
                 }
             } message: {
-                Text("Would you like to send us feedback about what could be improved?")
+                Text(RatingsManagerConfig.shared.getFeedbackPromptMessage())
             }
             
             // Email support integration
             .sheet(isPresented: $viewModel.isMailViewPresented) {
                 
                 MailViewVM(
-                    subject: "SuperTuber Feedback",
-                    body: """
-                    Hello SuperTuber Team,
-                    
-                    I'd like to provide some feedback about the app:
-                    
-                    [Please describe what you don't like or what could be improved]
-                    
-                    ------------------------
-                    \(DeviceInfoHelper.getDeviceInfo())
-                    ------------------------
-                    """,
-                    toRecipients: ["supertuber@smartappsfor.us"],
+                    subject: viewModel.getEmailSubject(),
+                    body: viewModel.getEmailBody(),
+                    toRecipients: viewModel.getEmailRecipients(),
                     onDismiss: { sent in
                         viewModel.handleMailSent(sent)
                     }
                 )
             }
-            .alert("Mail Not Configured", isPresented: $viewModel.isMailUnavailableAlertPresented) {
-                Button("OK", role: .cancel) {}
+            .alert(RatingsManagerConfig.shared.getMailUnavailableAlertTitle(), isPresented: $viewModel.isMailUnavailableAlertPresented) {
+                Button(RatingsManagerConfig.shared.getMailUnavailableAlertButtonText(), role: .cancel) {}
             } message: {
-                Text("Please configure the Mail app on your device to send feedback emails.")
+                Text(RatingsManagerConfig.shared.getMailUnavailableAlertMessage())
             }
-            .alert("Thanks!", isPresented: $viewModel.isMailSentConfirmationPresented) {
-                Button("OK", role: .cancel) {}
+            .alert(RatingsManagerConfig.shared.getMailSentConfirmationTitle(), isPresented: $viewModel.isMailSentConfirmationPresented) {
+                Button(RatingsManagerConfig.shared.getMailSentConfirmationButtonText(), role: .cancel) {}
             } message: {
-                Text("Your feedback email was sent successfully. We appreciate your input!")
+                Text(RatingsManagerConfig.shared.getMailSentConfirmationMessage())
             }
     }
 }
