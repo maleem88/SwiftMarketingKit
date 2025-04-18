@@ -12,25 +12,25 @@ public struct OnboardingView: View {
     /// The view model that manages the onboarding state
     @ObservedObject private var viewModel: OnboardingViewModel
     
-    /// Background color for the onboarding view
-    private let backgroundColor: Color
+    /// Creates an onboarding view with the default view model and configuration
+    public init(config: OnboardingManagerConfig = OnboardingManagerConfig.shared) {
+        self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(config: config))
+    }
     
-    /// Creates an onboarding view with the default view model
-    public init(backgroundColor: Color = Color(UIColor.systemBackground)) {
-        self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel())
-        self.backgroundColor = backgroundColor
+    /// Creates an onboarding view with custom steps
+    public init(steps: [OnboardingStep], config: OnboardingManagerConfig = OnboardingManagerConfig.shared) {
+        self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(steps: steps, config: config))
     }
     
     /// Creates an onboarding view with a custom view model
-    public init(viewModel: OnboardingViewModel, backgroundColor: Color = Color(UIColor.systemBackground)) {
+    public init(viewModel: OnboardingViewModel) {
         self._viewModel = ObservedObject(wrappedValue: viewModel)
-        self.backgroundColor = backgroundColor
     }
     
     public var body: some View {
         ZStack {
-            // Background color
-            backgroundColor.ignoresSafeArea()
+            // Background color from config
+            viewModel.backgroundColor.ignoresSafeArea()
             
             // Current step view with updated step information
             OnboardingStepView(
@@ -44,7 +44,21 @@ public struct OnboardingView: View {
                 },
                 onSkip: {
                     viewModel.skipOnboarding()
-                }
+                },
+                // Pass configuration values from view model
+                primaryColor: viewModel.primaryColor,
+                secondaryColor: viewModel.secondaryColor,
+                titleFont: viewModel.titleFont,
+                descriptionFont: viewModel.descriptionFont,
+                buttonFont: viewModel.buttonFont,
+                nextButtonText: viewModel.nextButtonText,
+                previousButtonText: viewModel.previousButtonText,
+                skipButtonText: viewModel.skipButtonText,
+                getStartedButtonText: viewModel.getStartedButtonText,
+                showSkipButton: viewModel.shouldShowSkipButton,
+                showProgressIndicator: viewModel.shouldShowProgressIndicator,
+                progressIndicatorStyle: viewModel.progressIndicatorStyle,
+                enableSwipeNavigation: viewModel.isSwipeNavigationEnabled
             )
             .animation(.easeInOut, value: viewModel.currentStepIndex)
         }
@@ -52,5 +66,10 @@ public struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView()
+    // Create a custom configuration for the preview
+    let config = OnboardingManagerConfig.shared
+        .setPrimaryColor(.blue)
+        .setBackgroundColor(Color(.systemBackground))
+    
+    return OnboardingView(config: config)
 }
