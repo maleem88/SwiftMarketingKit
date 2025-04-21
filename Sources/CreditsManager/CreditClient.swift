@@ -50,6 +50,7 @@ public struct CreditClient {
     }
     
     // MARK: - Public Methods
+    
     public var consumeCredits: (Int) -> Bool
     public var getRemainingCredits: () -> Int
     public var getTotalCredits: () -> Int

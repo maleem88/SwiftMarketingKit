@@ -78,6 +78,11 @@ public class CreditViewModel: ObservableObject {
         return config.getCreditsTitleText()
     }
     
+    // Get the days until renew for the credits display
+    public var daysUntilRenew: String {
+        return config.getDaysUntilRenew()
+    }
+    
     // Get the title for the history section
     public var historyTitleText: String {
         return config.getHistoryTitleText()

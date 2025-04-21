@@ -52,6 +52,7 @@ public class CreditsManagerConfig {
     private var creditHistoryKey: String = "com.credits.creditHistory"
     
     // UI customization
+    private var daysUntilRenew: String = "Days until renewal"
     private var creditsTitleText: String = "Monthly Credits"
     private var historyTitleText: String = "Recent Activity"
     private var insufficientCreditsAlertTitle: String = "Insufficient Credits"
@@ -123,6 +124,15 @@ public class CreditsManagerConfig {
     @discardableResult
     public func setCreditsTitleText(_ title: String) -> Self {
         self.creditsTitleText = title
+        return self
+    }
+    
+    /// Set the title text for the credits display
+    /// - Parameter title: The title text
+    /// - Returns: The config instance for chaining
+    @discardableResult
+    public func setDaysUntilRenewalText(_ title: String) -> Self {
+        self.daysUntilRenew = title
         return self
     }
     
@@ -214,6 +224,11 @@ public class CreditsManagerConfig {
     func getCreditsTitleText() -> String {
         return creditsTitleText
     }
+    
+    func getDaysUntilRenew() -> String {
+        return daysUntilRenew
+    }
+    
     
     func getHistoryTitleText() -> String {
         return historyTitleText

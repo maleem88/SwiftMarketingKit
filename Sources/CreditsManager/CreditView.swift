@@ -58,7 +58,7 @@ public struct CreditView: View {
                 HStack {
                     Image(systemName: "calendar.badge.clock")
                         .foregroundColor(.secondary)
-                    Text("Days until renewal: \(viewModel.daysUntilRenewal)")
+                    Text("\(viewModel.daysUntilRenew): \(viewModel.daysUntilRenewal)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()

@@ -195,11 +195,9 @@ public struct SupportButtonVM: View {
             viewModel.contactSupportTapped()
         } label: {
             Label(viewModel.getSupportButtonText(), systemImage: viewModel.getSupportButtonIcon())
-                .font(viewModel.getButtonFont())
-                .foregroundColor(viewModel.getTextColor())
+                
         }
-        .buttonStyle(BorderedProminentButtonStyle())
-        .tint(viewModel.getPrimaryColor())
+        
         .sheet(isPresented: $viewModel.isMailViewPresented) {
             MailViewVM(
                 subject: viewModel.getEmailSubject(),
