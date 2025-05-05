@@ -2,6 +2,22 @@ import Foundation
 import SwiftUI
 import RevenueCat
 
+/// Model representing a subscription plan for display in the UI
+public struct SubscriptionPlanModel {
+    let package: Package
+    let title: String
+    let subtitle: String?
+    let price: String
+    let period: String
+    let perWeekPrice: String?
+    let isSelected: Bool
+    let hasTrial: Bool
+    let showPricePerPeriod: Bool
+    let isBestValue: Bool
+    let savingsText: String?
+    let isLifetime: Bool
+}
+
 // UserDefaults keys
 private enum UserDefaultsKeys {
     static let firstLaunchDate = "com.supertuber.firstLaunchDate"
@@ -57,7 +73,7 @@ public class SubscribeViewModel: ObservableObject {
     @Published var isLoading: Bool = true
     @Published var errorMessage: String? = nil
     @Published var selectedPackageIdentifier: String? = nil
-    @Published var freeTrialEnabled: Bool = true
+    @Published var freeTrialEnabled: Bool = false
     @Published var isLifetimeOfferAvailable: Bool = false
     @Published var lifetimeOfferRemainingSeconds: Double = 0
     @Published var lifetimeOfferViewModel: LifetimeOfferViewModel
@@ -82,6 +98,137 @@ public class SubscribeViewModel: ObservableObject {
     }
     
     // MARK: - Public Methods
+    
+    /// Get a formatted subscription plan model for a package
+    /// - Parameter package: The RevenueCat package
+    /// - Returns: A formatted SubscriptionPlanModel for display
+    public func getSubscriptionPlanModel(for package: Package) -> SubscriptionPlanModel {
+        let isWeekly = package.packageType == .weekly
+        let isLifetime = package.packageType == .lifetime
+        let shouldShowPerWeek = !isWeekly && !isLifetime
+        let isSelected = selectedPackageIdentifier == package.identifier
+        let isBestValue = package.packageType == SubscribeManagerConfig.getBestValuePackageType()
+        
+        // Calculate savings text if this is the best value package and savings display is enabled
+        var savingsText: String? = nil
+        if isBestValue && SubscribeManagerConfig.shouldShowSavingsPercentage() {
+            if let savingsPercentage = calculateSavingsPercentage(for: package) {
+                let formatString = SubscribeManagerConfig.getSavingsTextFormat()
+                savingsText = formatString.replacingOccurrences(of: "{percentage}", with: "\(savingsPercentage)")
+            }
+        }
+        
+        return SubscriptionPlanModel(
+            package: package,
+            title: getPackageTitle(package),
+            subtitle: shouldShowPerWeek ? getSubtitle(package) : isLifetime ? getPackagePrice(package) : nil,
+            price: getPackagePrice(package),
+            period: getPackagePeriod(package),
+            perWeekPrice: shouldShowPerWeek ? getWeeklyPrice(package) : nil,
+            isSelected: isSelected,
+            hasTrial: isWeekly && freeTrialEnabled,
+            showPricePerPeriod: !shouldShowPerWeek && !isLifetime,
+            isBestValue: isBestValue,
+            savingsText: savingsText,
+            isLifetime: isLifetime
+        )
+    }
+    
+    /// Get subscription plan models for all available packages
+    /// - Returns: Array of SubscriptionPlanModel objects
+    public func getSubscriptionPlanModels() -> [SubscriptionPlanModel] {
+        return availablePackages.map { getSubscriptionPlanModel(for: $0) }
+    }
+    
+    // Helper methods for formatting package information
+    private func getPackageTitle(_ package: Package) -> String {
+        switch package.packageType {
+        case .weekly:
+            return freeTrialEnabled ? "3-Day Free Trial" : "Weekly"
+        case .monthly:
+            return "Monthly"
+        case .annual:
+            return "Yearly"
+        case .lifetime:
+            return "Lifetime Access"
+        default:
+            return package.identifier
+        }
+    }
+    
+    private func getPackagePrice(_ package: Package) -> String {
+        let price = package.storeProduct.localizedPriceString
+        if package.packageType == .weekly && freeTrialEnabled {
+            return "then \(price)"
+        }
+        return price
+    }
+    
+    private func getPackagePeriod(_ package: Package) -> String {
+        switch package.packageType {
+        case .weekly:
+            return "per week"
+        case .monthly:
+            return "per month"
+        case .annual:
+            return "per year"
+        case .lifetime:
+            return ""
+        default:
+            return ""
+        }
+    }
+    
+    private func getSubtitle(_ package: Package) -> String {
+        return getPackagePrice(package)
+    }
+    
+    private func getWeeklyPrice(_ package: Package) -> String? {
+        guard package.packageType == .annual || package.packageType == .monthly else { return nil }
+        return package.storeProduct.localizedPricePerWeek
+    }
+    
+    /// Calculate the savings percentage between the weekly package and the given package
+    /// - Parameter package: The package to compare with the weekly package
+    /// - Returns: The savings percentage as an integer, or nil if calculation is not possible
+    public func calculateSavingsPercentage(for package: Package) -> Int? {
+        // Find the weekly package for comparison
+        guard let weeklyPackage = availablePackages.first(where: { $0.packageType == .weekly }) else {
+            return nil
+        }
+        
+        // Get the price per week for both packages
+        guard let weeklyPrice = weeklyPackage.storeProduct.price as NSDecimalNumber?,
+              let packagePrice = package.storeProduct.price as NSDecimalNumber? else {
+            return nil
+        }
+        
+        // Calculate the price per week for the package
+        var pricePerWeek: NSDecimalNumber
+        
+        switch package.packageType {
+        case .weekly:
+            pricePerWeek = packagePrice
+        case .monthly:
+            // Assuming 4.3 weeks per month on average
+            pricePerWeek = packagePrice.dividing(by: NSDecimalNumber(value: 4.3))
+        case .annual:
+            // 52 weeks per year
+            pricePerWeek = packagePrice.dividing(by: NSDecimalNumber(value: 52))
+        default:
+            return nil
+        }
+        
+        // Calculate savings percentage
+        if weeklyPrice.doubleValue <= 0 || pricePerWeek.doubleValue <= 0 {
+            return nil
+        }
+        
+        let savingsPercentage = (1 - (pricePerWeek.doubleValue / weeklyPrice.doubleValue)) * 100
+        
+        // Return as rounded integer
+        return abs(Int(round(savingsPercentage)))
+    }
     
     // Called when the view appears
     public func onAppear() async {
@@ -122,7 +269,7 @@ public class SubscribeViewModel: ObservableObject {
                 
                 // Select the first package by default
                 if !self.availablePackages.isEmpty {
-                    self.selectedPackageIdentifier = self.availablePackages.first?.identifier
+                    self.selectedPackageIdentifier = self.availablePackages.first {$0.packageType == SubscribeManagerConfig.getBestValuePackageType()}?.identifier
                 }
             }
             
@@ -173,9 +320,10 @@ public class SubscribeViewModel: ObservableObject {
                 selectedPackageIdentifier = monthlyPackage.identifier
             }
         } else {
-            // Find a yearly package
-            if let yearlyPackage = availablePackages.first(where: { $0.packageType == .annual }) {
-                selectedPackageIdentifier = yearlyPackage.identifier
+            // Find the best value package as configured
+            let bestValuePackageType = SubscribeManagerConfig.getBestValuePackageType()
+            if let bestValuePackage = availablePackages.first(where: { $0.packageType == bestValuePackageType }) {
+                selectedPackageIdentifier = bestValuePackage.identifier
             }
         }
     }
@@ -241,6 +389,7 @@ public class SubscribeViewModel: ObservableObject {
     }
     
     // Update lifetime offer timer
+    @MainActor
     public func updateLifetimeOfferTimer() async {
         // Update the remaining time for the lifetime offer
         lifetimeOfferRemainingSeconds = AppFirstLaunch.getRemainingSecondsForLifetimeOffer()

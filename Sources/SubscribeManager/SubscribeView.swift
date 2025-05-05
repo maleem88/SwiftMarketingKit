@@ -30,68 +30,6 @@ public struct SubscribeView: View {
         }
     }
     
-    // Helper methods for formatting package information
-    private func getPackageTitle(_ package: Package) -> String {
-        switch package.packageType {
-        case .weekly:
-            return viewModel.freeTrialEnabled ? "3-Day Free Trial" : "Weekly"
-        case .monthly:
-            return "Monthly"
-        case .annual:
-            return "Yearly"
-        case .lifetime:
-            return "Lifetime Access"
-        default:
-            return package.identifier
-        }
-    }
-    
-    private func getPackagePrice(_ package: Package) -> String {
-        let price = package.storeProduct.localizedPriceString
-        if package.packageType == .weekly && viewModel.freeTrialEnabled {
-            return "then \(price)"
-        }
-        return price
-    }
-    
-    private func getPackagePeriod(_ package: Package) -> String {
-        switch package.packageType {
-        case .weekly:
-            return "per week"
-        case .monthly:
-            return "per month"
-        case .annual:
-            return "per year"
-        case .lifetime:
-            return ""
-        default:
-            return ""
-        }
-    }
-    
-    private func getYearlySubtitle(_ package: Package) -> String {
-        return "\(package.storeProduct.localizedPriceString) per year"
-    }
-    
-    private func getWeeklyPrice(_ package: Package) -> String? {
-        guard package.packageType == .annual else { return nil }
-        
-        return package.storeProduct.localizedPricePerWeek
-        // Calculate approximate weekly price
-//        if let priceDecimal = package.storeProduct.price as Decimal? {
-//            let weeklyPrice = priceDecimal / 52
-//            let formatter = NumberFormatter()
-//            formatter.numberStyle = .currency
-//            formatter.locale = package.storeProduct.localizedPricePerWeek
-//            formatter.maximumFractionDigits = 2
-//            
-//            if let formattedPrice = formatter.string(from: weeklyPrice as NSNumber) {
-//                return formattedPrice
-//            }
-//        }
-        return nil
-    }
-    
 
     
     public var body: some View {
@@ -121,15 +59,15 @@ public struct SubscribeView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        viewModel.dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                }
-            }
+//            .toolbar {
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Button {
+//                        viewModel.dismiss()
+//                    } label: {
+//                        Image(systemName: "xmark")
+//                    }
+//                }
+//            }
             // Card-style subscription options with gradient button
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 12) {
@@ -164,26 +102,22 @@ public struct SubscribeView: View {
                     } else {
                         
                         // Dynamic subscription plans from RevenueCat
-                        ForEach(viewModel.availablePackages, id: \.identifier) { package in
-                            let isWeekly = package.packageType == .weekly
-                            let isYearly = package.packageType == .annual
-                            let isLifeTime = package.packageType == .lifetime
-                            let isSelected = viewModel.selectedPackageIdentifier == package.identifier
-                            
+                        ForEach(viewModel.getSubscriptionPlanModels(), id: \.package.identifier) { planModel in
                             SubscriptionPlanCard(
-                                title: getPackageTitle(package),
-                                subtitle: isYearly ? getYearlySubtitle(package) : isLifeTime ? getPackagePrice(package) : nil,
-                                price: getPackagePrice(package),
-                                period: getPackagePeriod(package),
-                                perWeekPrice: isYearly ? getWeeklyPrice(package) : nil,
-                                isSelected: isSelected,
-                                hasTrial: isWeekly && viewModel.freeTrialEnabled,
-                                showPricePerPeriod: !isYearly && !isLifeTime,
+                                title: planModel.title,
+                                subtitle: planModel.subtitle,
+                                price: planModel.price,
+                                period: planModel.period,
+                                perWeekPrice: planModel.perWeekPrice,
+                                isSelected: planModel.isSelected,
+                                hasTrial: planModel.hasTrial,
+                                showPricePerPeriod: planModel.showPricePerPeriod,
                                 trialDays: 3,
-                                isBestValue: isYearly,
-                                lifetimeOfferViewModel: isLifeTime ? viewModel.lifetimeOfferViewModel : nil,
+                                isBestValue: planModel.isBestValue,
+                                savingsText: planModel.savingsText,
+                                lifetimeOfferViewModel: planModel.isLifetime ? viewModel.lifetimeOfferViewModel : nil,
                                 action: {
-                                    viewModel.selectPlan(package.identifier)
+                                    viewModel.selectPlan(planModel.package.identifier)
                                 }
                             )
                         }
@@ -388,6 +322,7 @@ struct SubscriptionPlanCard: View {
     let showPricePerPeriod: Bool
     let trialDays: Int
     let isBestValue: Bool
+    let savingsText: String?
     let lifetimeOfferViewModel: LifetimeOfferViewModel?
     let action: () -> Void
     
@@ -403,7 +338,18 @@ struct SubscriptionPlanCard: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(.primary)
                             
-                            if isBestValue {
+                            if let savingsText = savingsText {
+                                Text(savingsText)
+                                    .font(.caption2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.green)
+                                    )
+                            } else if isBestValue {
                                 Text("Best Value")
                                     .font(.caption2)
                                     .fontWeight(.semibold)
@@ -495,6 +441,7 @@ struct SubscriptionPlanCard: View {
         showPricePerPeriod: Bool = true,
         trialDays: Int = 0,
         isBestValue: Bool = false,
+        savingsText: String? = nil,
         lifetimeOfferViewModel: LifetimeOfferViewModel? = nil,
         action: @escaping () -> Void
     ) {
@@ -508,6 +455,7 @@ struct SubscriptionPlanCard: View {
         self.showPricePerPeriod = showPricePerPeriod
         self.trialDays = trialDays
         self.isBestValue = isBestValue
+        self.savingsText = savingsText
         self.lifetimeOfferViewModel = lifetimeOfferViewModel
         self.action = action
     }

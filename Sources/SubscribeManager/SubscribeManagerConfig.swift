@@ -43,6 +43,15 @@ public class SubscribeManagerConfig {
     /// Tint color for the subscribe view (default: .black)
     private var tintColor: Color = .black
     
+    /// Package type to mark as "best value" (default: .annual)
+    private var bestValuePackageType: PackageType = .annual
+    
+    /// Whether to show savings percentage instead of "best value" badge (default: true)
+    private var showSavingsPercentage: Bool = true
+    
+    /// Format for the savings text (default: "Save {percentage}%")
+    private var savingsTextFormat: String = "Save {percentage}%"
+    
     /// Private initializer to enforce singleton pattern
     private init() {}
     
@@ -164,5 +173,41 @@ public class SubscribeManagerConfig {
     /// - Returns: The tint color
     public static func getTintColor() -> Color {
         return shared.tintColor
+    }
+    
+    /// Set the package type to mark as "best value"
+    /// - Parameter packageType: The RevenueCat package type to mark as "best value"
+    public static func setBestValuePackageType(_ packageType: PackageType) {
+        shared.bestValuePackageType = packageType
+    }
+    
+    /// Get the package type marked as "best value"
+    /// - Returns: The package type marked as "best value"
+    public static func getBestValuePackageType() -> PackageType {
+        return shared.bestValuePackageType
+    }
+    
+    /// Set whether to show savings percentage instead of "best value" badge
+    /// - Parameter show: Whether to show savings percentage
+    public static func setShowSavingsPercentage(_ show: Bool) {
+        shared.showSavingsPercentage = show
+    }
+    
+    /// Get whether to show savings percentage instead of "best value" badge
+    /// - Returns: Whether to show savings percentage
+    public static func shouldShowSavingsPercentage() -> Bool {
+        return shared.showSavingsPercentage
+    }
+    
+    /// Set the format for the savings text
+    /// - Parameter format: The format string (use {percentage} as a placeholder for the actual percentage)
+    public static func setSavingsTextFormat(_ format: String) {
+        shared.savingsTextFormat = format
+    }
+    
+    /// Get the format for the savings text
+    /// - Returns: The format string
+    public static func getSavingsTextFormat() -> String {
+        return shared.savingsTextFormat
     }
 }
