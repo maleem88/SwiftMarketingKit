@@ -96,10 +96,9 @@ extension CreditClient {
             userDefaults.removeObject(forKey: creditHistoryKey)
         }
         
-        // Initialize total credits if not set
-        if userDefaults.object(forKey: totalCreditsKey) == nil {
-            userDefaults.set(config.getCreditAmount(), forKey: totalCreditsKey)
-        }
+        // Always update total credits with the current config value
+        // This ensures that changes to the credit amount via setCreditAmount are reflected
+        userDefaults.set(config.getCreditAmount(), forKey: totalCreditsKey)
         
         // Initialize consumed credits if not set
         if userDefaults.object(forKey: consumedCreditsKey) == nil {

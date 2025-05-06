@@ -201,9 +201,6 @@ public class CreditsManagerConfig {
         return renewalPeriod
     }
     
-    func getCreditAmount() -> Int {
-        return creditAmount
-    }
     
     func getTotalCreditsKey() -> String {
         return totalCreditsKey
@@ -268,6 +265,12 @@ public class CreditsManagerConfig {
     
     func getMaxHistoryItems() -> Int {
         return maxHistoryItems
+    }
+    
+    /// Get the configured credit amount
+    /// - Returns: The number of credits allocated each renewal period
+    func getCreditAmount() -> Int {
+        return creditAmount
     }
     
     /// Get the appropriate color for a given credit percentage
