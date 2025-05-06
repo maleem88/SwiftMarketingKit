@@ -8,6 +8,7 @@
 import Foundation
 import RevenueCat
 import SwiftUI
+import UIKit
 
 /// Central configuration class for the SubscribeManager module
 public class SubscribeManagerConfig {
@@ -210,4 +211,6 @@ public class SubscribeManagerConfig {
     public static func getSavingsTextFormat() -> String {
         return shared.savingsTextFormat
     }
+    
+
 }
