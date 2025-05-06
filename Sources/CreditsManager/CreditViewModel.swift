@@ -11,8 +11,7 @@ import Combine
 
 public class CreditViewModel: ObservableObject {
     // MARK: - Properties
-    private let creditClient: CreditClient
-    private let config: CreditsManagerConfig
+    private let creditClient = CreditClient.shared
     
     // MARK: - Published State
     @Published public var remainingCredits: Int = 0
@@ -24,9 +23,7 @@ public class CreditViewModel: ObservableObject {
     @Published public var lastConsumeAttempt: Int = 0
     
     // MARK: - Initialization
-    public init(creditClient: CreditClient = .live(), config: CreditsManagerConfig = CreditsManagerConfig.shared) {
-        self.creditClient = creditClient
-        self.config = config
+    public init() {
         refreshCreditStatus()
     }
     
@@ -50,7 +47,7 @@ public class CreditViewModel: ObservableObject {
     public func consumeCredits(_ amount: Int, description: String) {
         lastConsumeAttempt = amount
         
-        let success = creditClient.consumeCredits(amount)
+        let success = creditClient.consumeCredits(amount: amount)
         showInsufficientCreditsAlert = !success
         
         if success {
@@ -70,37 +67,43 @@ public class CreditViewModel: ObservableObject {
     // MARK: - Helper Methods
     public var creditColor: Color {
         let percentage = Double(remainingCredits) / Double(max(1, totalCredits))
-        return config.getCreditColor(for: percentage)
+        if percentage > creditClient.highCreditThreshold {
+            return creditClient.highCreditColor
+        } else if percentage > creditClient.mediumCreditThreshold {
+            return creditClient.mediumCreditColor
+        } else {
+            return creditClient.lowCreditColor
+        }
     }
     
     // Get the title for the credits display
     public var creditsTitleText: String {
-        return config.getCreditsTitleText()
+        return creditClient.creditsTitleText
     }
     
     // Get the days until renew for the credits display
     public var daysUntilRenew: String {
-        return config.getDaysUntilRenew()
+        return creditClient.renewalTextTitle
     }
     
     // Get the title for the history section
     public var historyTitleText: String {
-        return config.getHistoryTitleText()
+        return creditClient.historyTitleText
     }
     
     // Check if history section should be shown
     public var shouldShowHistorySection: Bool {
-        return config.shouldShowHistorySection() && !creditHistory.isEmpty
+        return creditClient.showHistorySection && !creditHistory.isEmpty
     }
     
     // Get max number of history items to display
     public var maxHistoryItems: Int {
-        return config.getMaxHistoryItems()
+        return creditClient.maxHistoryItems
     }
     
     // Get the formatted insufficient credits alert message
     public func getInsufficientCreditsAlertMessage() -> String {
-        let message = config.getInsufficientCreditsAlertMessage()
+        let message = creditClient.insufficientCreditsAlertMessage
         return message
             .replacingOccurrences(of: "%@", with: "\(lastConsumeAttempt)", options: [], range: message.range(of: "%@"))
             .replacingOccurrences(of: "%@", with: "\(remainingCredits)", options: [], range: message.range(of: "%@"))

@@ -144,7 +144,7 @@ public struct CreditView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .alert(CreditsManagerConfig.shared.getInsufficientCreditsAlertTitle(), isPresented: $viewModel.showInsufficientCreditsAlert) {
+        .alert(CreditClient.shared.insufficientCreditsAlertTitle, isPresented: $viewModel.showInsufficientCreditsAlert) {
             Button("OK", role: .cancel) {
                 viewModel.dismissInsufficientCreditsAlert()
             }
