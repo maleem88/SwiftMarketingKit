@@ -89,8 +89,6 @@ public class CreditClient {
         }
     }
     
-    // Separate property for the renewal text title (e.g., "Days until renewal")
-    public var renewalTextTitle: String = "Days until renewal"
     
     // MARK: - Initialization
     private init() {

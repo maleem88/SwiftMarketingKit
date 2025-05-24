@@ -82,8 +82,8 @@ public class CreditViewModel: ObservableObject {
     }
     
     // Get the days until renew for the credits display
-    public var daysUntilRenew: String {
-        return creditClient.renewalTextTitle
+    public var daysUntilRenewText: String {
+        creditClient.daysUntilRenewText
     }
     
     // Get the title for the history section

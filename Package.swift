@@ -7,7 +7,8 @@ let package = Package(
     name: "SwiftMarketingKit",
     platforms: [
         .iOS(.v16),
-        .watchOS(.v10)
+        .watchOS(.v10),
+        .macOS(.v13)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.

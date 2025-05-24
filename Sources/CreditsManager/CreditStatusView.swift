@@ -53,18 +53,22 @@ public struct CreditStatusView: View {
             .frame(height: 12)
             
             // Renewal Info
+            
             HStack {
+                
                 Image(systemName: "calendar.badge.clock")
                     .foregroundColor(.secondary)
-                Text("\(viewModel.daysUntilRenew): \(viewModel.daysUntilRenewal)")
+                
+                Text("\(viewModel.daysUntilRenewal): \(viewModel.daysUntilRenewText)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
+                
                 Spacer()
                 
-                Text(viewModel.nextRenewalDate, style: .date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
+            
+            .environment(\.layoutDirection, .rightToLeft)
+            
         }
 //        .padding()
 //        .background(Color(.secondarySystemBackground))

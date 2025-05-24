@@ -5,8 +5,13 @@
 //  Created by mohamed abd elaleem on 06/04/2025.
 //
 
+
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 
 // MARK: - Device Info Helper
 
