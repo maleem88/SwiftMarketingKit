@@ -21,6 +21,7 @@ public class CreditViewModel: ObservableObject {
     @Published public var creditHistory: [CreditHistoryItem] = []
     @Published public var showInsufficientCreditsAlert: Bool = false
     @Published public var lastConsumeAttempt: Int = 0
+    @Published public var creditMode: CreditMode = .renewal
     
     // MARK: - Initialization
     public init() {
@@ -42,6 +43,7 @@ public class CreditViewModel: ObservableObject {
         nextRenewalDate = creditClient.getNextRenewalDate()
         daysUntilRenewal = creditClient.getDaysUntilRenewal()
         creditHistory = creditClient.getCreditHistory()
+        creditMode = creditClient.creditMode
     }
     
     public func consumeCredits(_ amount: Int, description: String) {
@@ -81,6 +83,17 @@ public class CreditViewModel: ObservableObject {
         return creditClient.creditsTitleText
     }
     
+    // Check if we're in renewal mode
+    public var isRenewalMode: Bool {
+        return creditClient.creditMode == .renewal
+    }
+    
+    // Set the credit mode
+    public func setCreditMode(_ mode: CreditMode) {
+        creditClient.setCreditMode(mode)
+        refreshCreditStatus()
+    }
+    
     // Get the days until renew for the credits display
     public var daysUntilRenewText: String {
         creditClient.daysUntilRenewText
@@ -103,10 +116,19 @@ public class CreditViewModel: ObservableObject {
     
     // Get the formatted insufficient credits alert message
     public func getInsufficientCreditsAlertMessage() -> String {
-        let message = creditClient.insufficientCreditsAlertMessage
-        return message
-            .replacingOccurrences(of: "%@", with: "\(lastConsumeAttempt)", options: [], range: message.range(of: "%@"))
-            .replacingOccurrences(of: "%@", with: "\(remainingCredits)", options: [], range: message.range(of: "%@"))
-            .replacingOccurrences(of: "%@", with: "\(daysUntilRenewal)", options: [], range: message.range(of: "%@"))
+        if creditClient.creditMode == .oneTime {
+            // For one-time credits, use the simpler message without renewal info
+            let message = creditClient.oneTimeInsufficientCreditsAlertMessage
+            return message
+                .replacingOccurrences(of: "%@", with: "\(lastConsumeAttempt)", options: [], range: message.range(of: "%@"))
+                .replacingOccurrences(of: "%@", with: "\(remainingCredits)", options: [], range: message.range(of: "%@"))
+        } else {
+            // For renewal credits, include the renewal info
+            let message = creditClient.insufficientCreditsAlertMessage
+            return message
+                .replacingOccurrences(of: "%@", with: "\(lastConsumeAttempt)", options: [], range: message.range(of: "%@"))
+                .replacingOccurrences(of: "%@", with: "\(remainingCredits)", options: [], range: message.range(of: "%@"))
+                .replacingOccurrences(of: "%@", with: "\(daysUntilRenewal)", options: [], range: message.range(of: "%@"))
+        }
     }
 }

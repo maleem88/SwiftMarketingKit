@@ -52,22 +52,20 @@ public struct CreditStatusView: View {
             }
             .frame(height: 12)
             
-            // Renewal Info
-            
-            HStack {
-                
-                Image(systemName: "calendar.badge.clock")
-                    .foregroundColor(.secondary)
-                
-                Text("\(viewModel.daysUntilRenewal): \(viewModel.daysUntilRenewText)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
+            // Renewal Info - Only show for renewal mode
+            if viewModel.isRenewalMode {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(viewModel.daysUntilRenewal): \(viewModel.daysUntilRenewText)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                }
+                .environment(\.layoutDirection, .rightToLeft)
             }
-            
-            .environment(\.layoutDirection, .rightToLeft)
             
         }
 //        .padding()
@@ -120,7 +118,7 @@ public struct CreditStatusView: View {
                 viewModel.dismissInsufficientCreditsAlert()
             }
         } message: {
-            Text("insufficient_credits_message \(viewModel.lastConsumeAttempt), \(viewModel.remainingCredits), \(viewModel.daysUntilRenewal)")
+            Text(viewModel.getInsufficientCreditsAlertMessage())
         }
     }
 }

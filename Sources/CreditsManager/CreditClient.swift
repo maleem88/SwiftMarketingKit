@@ -8,6 +8,17 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Credit Mode
+
+/// Defines the mode of operation for the credit system
+public enum CreditMode: String, Codable {
+    /// Credits are allocated once and do not automatically renew
+    case oneTime
+    
+    /// Credits are renewed periodically based on the configured renewal period
+    case renewal
+}
+
 // MARK: - Credit Client
 
 /// A service that manages the credit system
@@ -20,8 +31,23 @@ public class CreditClient {
     private let consumedCreditsKey = "com.credits.consumedCredits"
     private let nextRenewalDateKey = "com.credits.nextRenewalDate"
     private let creditHistoryKey = "com.credits.creditHistory"
+    private let creditModeKey = "com.credits.creditMode"
     
     // MARK: - Configuration Properties
+    
+    /// The current credit mode (one-time or renewal)
+    public var creditMode: CreditMode = .renewal {
+        didSet {
+            // Save the credit mode to UserDefaults
+            if let encoded = try? JSONEncoder().encode(creditMode) {
+                UserDefaults.standard.set(encoded, forKey: creditModeKey)
+            }
+            
+            // Update UI text based on mode
+            updateUITextForCurrentMode()
+        }
+    }
+    
     public var creditAmount: Int = 100 {
         didSet {
             // Update total credits when credit amount changes
@@ -32,9 +58,11 @@ public class CreditClient {
     // MARK: - UI Customization
     public var daysUntilRenewText: String = "Days until renewal"
     public var creditsTitleText: String = "Monthly Credits"
+    public var oneTimeCreditsTitleText: String = "Available Credits"
     public var historyTitleText: String = "Recent Activity"
     public var insufficientCreditsAlertTitle: String = "Insufficient Credits"
     public var insufficientCreditsAlertMessage: String = "You need %@ credits but only have %@ remaining. Your credits will renew in %@ days."
+    public var oneTimeInsufficientCreditsAlertMessage: String = "You need %@ credits but only have %@ remaining."
     
     // MARK: - Color Settings
     public var highCreditThreshold: Double = 0.6  // Above this percentage is green
@@ -92,15 +120,26 @@ public class CreditClient {
     
     // MARK: - Initialization
     private init() {
+        // Load credit mode from UserDefaults if available
+        if let modeData = UserDefaults.standard.data(forKey: creditModeKey),
+           let savedMode = try? JSONDecoder().decode(CreditMode.self, from: modeData) {
+            self.creditMode = savedMode
+        }
+        
         // Initialize UserDefaults if needed
         initializeUserDefaultsIfNeeded()
+        
+        // Update UI text based on current mode
+        updateUITextForCurrentMode()
     }
     
     // MARK: - Public Methods
     
     public func consumeCredits(amount: Int) -> Bool {
-        // First check if renewal is needed
-        let renewalOccurred = checkAndRenewCreditsIfNeeded()
+        // Only check for renewal if in renewal mode
+        if creditMode == .renewal {
+            let renewalOccurred = checkAndRenewCreditsIfNeeded()
+        }
         
         let consumedCredits = UserDefaults.standard.integer(forKey: consumedCreditsKey)
         let totalCredits = UserDefaults.standard.integer(forKey: totalCreditsKey)
@@ -153,6 +192,11 @@ public class CreditClient {
     }
     
     public func getDaysUntilRenewal() -> Int {
+        // In one-time mode, there's no renewal
+        if creditMode == .oneTime {
+            return 0
+        }
+        
         if let nextRenewalDate = UserDefaults.standard.object(forKey: nextRenewalDateKey) as? Date {
             let calendar = Calendar.current
             let components = calendar.dateComponents([.day], from: Date(), to: nextRenewalDate)
@@ -165,6 +209,8 @@ public class CreditClient {
         let totalCredits = UserDefaults.standard.integer(forKey: totalCreditsKey)
         UserDefaults.standard.set(0, forKey: consumedCreditsKey)
         
+        // If in one-time mode, this is effectively adding credits
+        
         // Add to history
         if let historyData = UserDefaults.standard.data(forKey: creditHistoryKey),
            var history = try? JSONDecoder().decode([CreditHistoryItem].self, from: historyData) {
@@ -176,7 +222,38 @@ public class CreditClient {
         }
     }
     
+    /// Sets the credit mode for the system
+    /// - Parameter mode: The credit mode to use (.oneTime or .renewal)
+    /// - Returns: The client instance for chaining
+    @discardableResult
+    public func setCreditMode(_ mode: CreditMode) -> Self {
+        self.creditMode = mode
+        return self
+    }
+    
+    /// Updates UI text elements based on the current credit mode
+    private func updateUITextForCurrentMode() {
+        if creditMode == .oneTime {
+            creditsTitleText = oneTimeCreditsTitleText
+        } else {
+            // Set based on renewal period
+            switch renewalPeriod {
+            case .daily:
+                creditsTitleText = "Daily Credits"
+            case .weekly:
+                creditsTitleText = "Weekly Credits"
+            case .monthly:
+                creditsTitleText = "Monthly Credits"
+            }
+        }
+    }
+    
     public func checkAndRenewCreditsIfNeeded() -> Bool {
+        // Skip renewal if in one-time mode
+        if creditMode == .oneTime {
+            return false
+        }
+        
         if let nextRenewalDate = UserDefaults.standard.object(forKey: nextRenewalDateKey) as? Date {
             if Date() >= nextRenewalDate {
                 // Reset consumed credits
@@ -215,6 +292,13 @@ public class CreditClient {
     // MARK: - Private Methods
     
     private func initializeUserDefaultsIfNeeded() {
+        // Initialize credit mode if not set
+        if UserDefaults.standard.object(forKey: creditModeKey) == nil {
+            if let encoded = try? JSONEncoder().encode(creditMode) {
+                UserDefaults.standard.set(encoded, forKey: creditModeKey)
+            }
+        }
+        
         // Reset state if requested
         if UserDefaults.standard.object(forKey: totalCreditsKey) == nil {
             UserDefaults.standard.set(creditAmount, forKey: totalCreditsKey)
@@ -225,7 +309,7 @@ public class CreditClient {
             UserDefaults.standard.set(0, forKey: consumedCreditsKey)
         }
         
-        // Initialize next renewal date if not set
+        // Initialize next renewal date if not set (only relevant for renewal mode)
         if UserDefaults.standard.object(forKey: nextRenewalDateKey) == nil {
             // Calculate next renewal date based on configured period
             let nextRenewalDate = calculateNextRenewalDate()
