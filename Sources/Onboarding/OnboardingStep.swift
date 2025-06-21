@@ -51,6 +51,9 @@ public struct OnboardingStep: Identifiable, Equatable {
     }
 }
 
+
+
+
 /// Defines the type of media to be displayed in an onboarding step
 public enum MediaType {
     /// Static image media type
@@ -110,8 +113,8 @@ public extension OnboardingStep {
             id: "intro",
             title: "Discover SuperTuber",
             description: "SuperTuber helps you save time by providing quick summaries of YouTube videos.",
-            mediaType: .image,
-            mediaSource: "onboarding_welcome",
+            mediaType: .video,
+            mediaSource: "onboarding_1",
             isLastStep: false,
             currentStepIndex: 1,
             totalSteps: 5
@@ -120,8 +123,8 @@ public extension OnboardingStep {
             id: "summaries",
             title: "Smart Summaries",
             description: "Get concise summaries of any YouTube video without watching the whole thing.",
-            mediaType: .image,
-            mediaSource: "onboarding_summaries",
+            mediaType: .video,
+            mediaSource: "onboarding_2",
             isLastStep: false,
             currentStepIndex: 2,
             totalSteps: 5
@@ -145,6 +148,42 @@ public extension OnboardingStep {
             isLastStep: true,
             currentStepIndex: 4,
             totalSteps: 5
+        )
+    ]
+}
+
+/// Sample onboarding steps with video content
+public extension OnboardingStep {
+    static let videoSampleSteps: [OnboardingStep] = [
+        OnboardingStep(
+            id: "welcome_video",
+            title: "Welcome to the App",
+            description: "Experience our app through engaging video tutorials.",
+            mediaType: .video,
+            mediaSource: "onboarding_1",
+            isLastStep: false,
+            currentStepIndex: 0,
+            totalSteps: 3
+        ),
+        OnboardingStep(
+            id: "feature_video",
+            title: "Key Features",
+            description: "Watch how our powerful features can help you achieve more.",
+            mediaType: .video,
+            mediaSource: "onboarding_1", // Using the same video for demonstration
+            isLastStep: false,
+            currentStepIndex: 1,
+            totalSteps: 3
+        ),
+        OnboardingStep(
+            id: "final_video",
+            title: "Get Started Now",
+            description: "You're all set! Start using our app to its full potential.",
+            mediaType: .video,
+            mediaSource: "onboarding_1", // Using the same video for demonstration
+            isLastStep: true,
+            currentStepIndex: 2,
+            totalSteps: 3
         )
     ]
 }

@@ -312,4 +312,12 @@ public class OnboardingManagerConfig {
     func shouldAutoPlayVideos() -> Bool {
         return autoPlayVideos
     }
+    
+    // MARK: - Convenience Methods for Sample Steps
+    
+    /// Get a sample onboarding flow with video content
+    /// - Returns: Array of onboarding steps with video content
+    public func getVideoSampleSteps() -> [OnboardingStep] {
+        return OnboardingStep.videoSampleSteps
+    }
 }

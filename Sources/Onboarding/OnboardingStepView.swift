@@ -127,8 +127,10 @@ public struct OnboardingStepView: View {
             Color.clear
                 .ignoresSafeArea()
             
-            // Phone frame positioned to extend below text area
+            // Use the MediaType.view method to display the appropriate media
             step.mediaType.view(source: step.mediaSource)
+//            
+//            // Phone frame positioned to extend below text area
                 
 //                .offset(y: -UIScreen.main.bounds.height * 0.05) // Move phone frame up slightly
             
