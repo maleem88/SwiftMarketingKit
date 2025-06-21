@@ -45,6 +45,12 @@ public class OnboardingManagerConfig {
         case none
     }
     
+    // MARK: - Text Overlay Style
+    public enum TextOverlayStyle {
+        case standard
+        case minimal
+    }
+    
     // MARK: - Public Configuration Methods
     
     /// Set custom UserDefaults keys for onboarding persistence

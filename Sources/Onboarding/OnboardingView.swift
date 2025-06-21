@@ -45,6 +45,7 @@ public struct OnboardingView: View {
                 onSkip: {
                     viewModel.skipOnboarding()
                 },
+                
                 // Pass configuration values from view model
                 primaryColor: viewModel.primaryColor,
                 secondaryColor: viewModel.secondaryColor,
@@ -58,7 +59,9 @@ public struct OnboardingView: View {
                 showSkipButton: viewModel.shouldShowSkipButton,
                 showProgressIndicator: viewModel.shouldShowProgressIndicator,
                 progressIndicatorStyle: viewModel.progressIndicatorStyle,
+                textOverlayStyle: .minimal,
                 enableSwipeNavigation: viewModel.isSwipeNavigationEnabled
+                
             )
             .animation(.easeInOut, value: viewModel.currentStepIndex)
         }

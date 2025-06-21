@@ -33,17 +33,17 @@ public struct PhoneFrameView<Content: View>: View {
 //                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
             
             // Content area
-        VStack {
+//        VStack {
             // Add a frame with fixed width and height to properly constrain content
             content
-                .frame(width: frameWidth * 0.96, height: 700)
+                .frame(width: frameWidth * 0.96)
                 .clipShape(RoundedRectangle(cornerRadius: 45))
 //                .overlay(
 //                    RoundedRectangle(cornerRadius: 35)
 //                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
 //                )
                 .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
-        }
+//        }
             
 //        }
 //        .padding(.horizontal, 40)

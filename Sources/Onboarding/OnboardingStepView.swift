@@ -46,6 +46,8 @@ public struct OnboardingStepView: View {
     public let showProgressIndicator: Bool
     /// Style of the progress indicator
     public let progressIndicatorStyle: OnboardingManagerConfig.ProgressIndicatorStyle
+    /// Style of the text overlay
+    public let textOverlayStyle: OnboardingManagerConfig.TextOverlayStyle
     /// Whether to enable swipe navigation
     public let enableSwipeNavigation: Bool
     
@@ -76,6 +78,7 @@ public struct OnboardingStepView: View {
         self.showSkipButton = true
         self.showProgressIndicator = true
         self.progressIndicatorStyle = .dots
+        self.textOverlayStyle = .standard
         self.enableSwipeNavigation = true
     }
     
@@ -98,6 +101,7 @@ public struct OnboardingStepView: View {
         showSkipButton: Bool = true,
         showProgressIndicator: Bool = true,
         progressIndicatorStyle: OnboardingManagerConfig.ProgressIndicatorStyle = .dots,
+        textOverlayStyle: OnboardingManagerConfig.TextOverlayStyle = .standard,
         enableSwipeNavigation: Bool = true
     ) {
         self.step = step
@@ -118,6 +122,7 @@ public struct OnboardingStepView: View {
         self.showSkipButton = showSkipButton
         self.showProgressIndicator = showProgressIndicator
         self.progressIndicatorStyle = progressIndicatorStyle
+        self.textOverlayStyle = textOverlayStyle
         self.enableSwipeNavigation = enableSwipeNavigation
     }
     
@@ -127,50 +132,117 @@ public struct OnboardingStepView: View {
             Color.clear
                 .ignoresSafeArea()
             
-            // Use the MediaType.view method to display the appropriate media
-            step.mediaType.view(source: step.mediaSource)
-//            
-//            // Phone frame positioned to extend below text area
-                
-//                .offset(y: -UIScreen.main.bounds.height * 0.05) // Move phone frame up slightly
-            
-            // Gradient overlay for text area at bottom
             VStack {
-                Spacer()
-                LinearGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Color.black.opacity(0), location: 0),
-                        .init(color: Color.black.opacity(0.8), location: 0.3),
-                        .init(color: Color.black, location: 0.7)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: UIScreen.main.bounds.height * 0.4) // Text area height
-            }
-            .ignoresSafeArea()
-            
-            // Content overlay positioned absolutely
-            VStack(spacing: 0) {
                 
-                HStack {
+                
+                HStack(alignment: .top) {
+                    if textOverlayStyle == .minimal {
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(step.title)
+                                .font(titleFont.bold())
+                            //                            .foregroundColor(.white)
+//                                .multilineTextAlignment(.leading)
+//                                .lineLimit(3)
+                            
+                            
+                            Text(step.description)
+                                .font(descriptionFont)
+                            //                            .foregroundColor(.white.opacity(0.9))
+//                                .multilineTextAlignment(.leading)
+//                                                        .lineLimit(3)
+                        }
+//                        .padding(.horizontal, 5)
+                    }
+                    
                     Spacer()
+                    
                     if showSkipButton {
                         Button(action: onSkip) {
                             Text(skipButtonText)
                                 .font(buttonFont)
                                 .fontWeight(.medium)
-                                .foregroundColor(secondaryColor)
+                                .foregroundColor(textOverlayStyle == .standard ? .white : .white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(textOverlayStyle == .minimal ? Color.black.opacity(0.3) : Color.clear)
+                                .cornerRadius(16)
                         }
                     }
+                    
                 }
-                .padding(.horizontal)
+                .padding()
+                
+                
+                PhoneFrameView {
+                    switch step.mediaType {
+                    case .image:
+                        if let uiImage = UIImage(named: step.mediaSource) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
+                                
+                        } else {
+                            // Fallback to a gradient background if image is not found
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 80, height: 80)
+                                    .foregroundColor(.white.opacity(0.8))
+                            )
+                        }
+                    case .video:
+                        // Use our custom VideoPlayerView for video playback
+                        VideoPlayerView(videoName: step.mediaSource, looping: true)
+                            .aspectRatio(contentMode: .fill)
+                    }
+                }
+                
+            }
+            
+//
+//            // Use the MediaType.view method to display the appropriate media
+//            step.mediaType.view(source: step.mediaSource)
+//            
+//            // Phone frame positioned to extend below text area
+                
+//                .offset(y: -UIScreen.main.bounds.height * 0.05) // Move phone frame up slightly
+            
+            // Gradient overlay for text area - only shown in standard style
+            if textOverlayStyle == .standard {
+                VStack {
+                    Spacer()
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Color.black.opacity(0), location: 0),
+                            .init(color: Color.black.opacity(0.7), location: 0.3),
+                            .init(color: Color.black.opacity(0.9), location: 0.6),
+                            .init(color: Color.black.opacity(1), location: 1)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: UIScreen.main.bounds.height * 0.4) // Text area height
+                }
+                .ignoresSafeArea()
+            }
+            
+            // Content overlay positioned absolutely
+            VStack(spacing: 0) {
                 
                 Spacer()
-                
+                            
                 // Bottom content area with text and controls
                 VStack(spacing: 16) {
-                    Spacer()
+                    if textOverlayStyle == .standard {
+                        Spacer()
+                    }
                     
                     // Progress indicator
                     if showProgressIndicator {
@@ -217,48 +289,48 @@ public struct OnboardingStepView: View {
                         .padding(.bottom, 10)
                     }
                     
-                    // Text content
-                    VStack(spacing: 16) {
-                        Text(step.title)
-                            .font(titleFont)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
-                        
-                        Text(step.description)
-                            .font(descriptionFont)
-                            .fontWeight(.medium)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    // Title and description - only shown in standard style
+                    if textOverlayStyle == .standard {
+                        VStack(spacing: 12) {
+                            Text(step.title)
+                                .font(titleFont)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal)
+                            
+                            Text(step.description)
+                                .font(descriptionFont)
+                                .foregroundColor(.white.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 24)
+                        }
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 24)
                     
                     // Navigation buttons in a single row
                     HStack {
-                        // Left side: Skip and Previous buttons
-//                        HStack(spacing: 12) {
-                            // Skip button
-                            
-                            
-                            // Previous button (hidden on first step)
-                            if !isFirstStep {
-                                Button(action: onPrevious) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "chevron.left")
-                                        Text(previousButtonText)
-                                    }
-                                    .font(buttonFont)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(Capsule().fill(Color.black.opacity(0.3)))
+                        // Left side: Previous button (hidden on first step)
+                        if !isFirstStep {
+                            Button(action: onPrevious) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chevron.left")
+                                    Text(previousButtonText)
                                 }
+                                .font(buttonFont)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    textOverlayStyle == .minimal ? 
+                                        Capsule().fill(Color.black.opacity(0.6)) : 
+                                        Capsule().fill(Color.black.opacity(0.3))
+                                )
                             }
-//                        }
+                        }
                         
                         Spacer()
                         
@@ -285,7 +357,7 @@ public struct OnboardingStepView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, textOverlayStyle == .minimal ? 16 : 20)
                 }
                 .frame(maxWidth: .infinity)
                 
@@ -311,7 +383,7 @@ public struct OnboardingStepView: View {
 
 #Preview {
     ZStack {
-        Color.black.ignoresSafeArea()
+        Color.white.ignoresSafeArea()
         
         OnboardingStepView(
             step: OnboardingStep(
@@ -329,7 +401,8 @@ public struct OnboardingStepView: View {
             onPrevious: {},
             onSkip: {},
             primaryColor: .blue,
-            progressIndicatorStyle: .bar
+//            progressIndicatorStyle: .bar,
+            textOverlayStyle: .minimal
         )
     }
 }
