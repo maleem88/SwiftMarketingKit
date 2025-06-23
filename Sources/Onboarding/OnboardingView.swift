@@ -12,6 +12,8 @@ public struct OnboardingView: View {
     /// The view model that manages the onboarding state
     @ObservedObject private var viewModel: OnboardingViewModel
     
+    @Environment(\.dismiss) var dismiss
+    
     /// Creates an onboarding view with the default view model and configuration
     public init(config: OnboardingManagerConfig = OnboardingManagerConfig.shared) {
         self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(config: config))
@@ -43,6 +45,7 @@ public struct OnboardingView: View {
                     viewModel.previousStep()
                 },
                 onSkip: {
+                    dismiss()
                     viewModel.skipOnboarding()
                 },
                 

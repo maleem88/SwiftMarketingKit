@@ -62,38 +62,38 @@ public enum MediaType {
     case video
     
     /// Returns the appropriate view for the media type
-    @ViewBuilder
-    public func view(source: String) -> some View {
-        PhoneFrameView {
-            switch self {
-            case .image:
-                if let uiImage = UIImage(named: source) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        
-                } else {
-                    // Fallback to a gradient background if image is not found
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .overlay(
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80, height: 80)
-                            .foregroundColor(.white.opacity(0.8))
-                    )
-                }
-            case .video:
-                // Use our custom VideoPlayerView for video playback
-                VideoPlayerView(videoName: source, looping: true)
-                    .aspectRatio(contentMode: .fill)
-            }
-        }
-    }
+//    @ViewBuilder
+//    public func view(source: String) -> some View {
+//        PhoneFrameView {
+//            switch self {
+//            case .image:
+//                if let uiImage = UIImage(named: source) {
+//                    Image(uiImage: uiImage)
+//                        .resizable()
+//                        .scaledToFit()
+//                        
+//                } else {
+//                    // Fallback to a gradient background if image is not found
+//                    LinearGradient(
+//                        gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
+//                        startPoint: .topLeading,
+//                        endPoint: .bottomTrailing
+//                    )
+//                    .overlay(
+//                        Image(systemName: "photo")
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 80, height: 80)
+//                            .foregroundColor(.white.opacity(0.8))
+//                    )
+//                }
+//            case .video:
+//                // Use our custom VideoPlayerView for video playback
+//                VideoPlayerView(videoName: source, looping: true)
+//                    .aspectRatio(contentMode: .fill)
+//            }
+//        }
+//    }
 }
 
 /// Sample onboarding steps for the app

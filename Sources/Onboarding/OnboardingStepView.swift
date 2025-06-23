@@ -9,6 +9,8 @@ import SwiftUI
 
 /// A view that displays a single step in the onboarding process
 public struct OnboardingStepView: View {
+    // MARK: - State
+    @State private var videoAspectRatio: CGFloat = 8 / 16.0
     // MARK: - Required Properties
     /// The onboarding step to display
     public let step: OnboardingStep
@@ -126,6 +128,10 @@ public struct OnboardingStepView: View {
         self.enableSwipeNavigation = enableSwipeNavigation
     }
     
+    var proposedHeight: CGFloat {
+        UIScreen.main.bounds.height * (textOverlayStyle == .minimal ? 0.7 : 0.8)
+    }
+    
     public var body: some View {
         ZStack {
             // Background is transparent to allow parent view to set the background
@@ -135,7 +141,7 @@ public struct OnboardingStepView: View {
             VStack {
                 
                 
-                HStack(alignment: .top) {
+                ZStack(alignment: .topTrailing) {
                     if textOverlayStyle == .minimal {
                         
                         VStack(alignment: .leading, spacing: 4) {
@@ -148,33 +154,38 @@ public struct OnboardingStepView: View {
                             
                             Text(step.description)
                                 .font(descriptionFont)
+                                .foregroundStyle(Color.gray)
                             //                            .foregroundColor(.white.opacity(0.9))
 //                                .multilineTextAlignment(.leading)
 //                                                        .lineLimit(3)
                         }
-//                        .padding(.horizontal, 5)
+                        .padding(.horizontal, 12)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    Spacer()
+                    
                     
                     if showSkipButton {
                         Button(action: onSkip) {
-                            Text(skipButtonText)
-                                .font(buttonFont)
-                                .fontWeight(.medium)
+                            Image(systemName: "xmark")
+//                            Text(skipButtonText)
+//                                .font(buttonFont)
+//                                .fontWeight(.medium)
                                 .foregroundColor(textOverlayStyle == .standard ? .white : .white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(textOverlayStyle == .minimal ? Color.black.opacity(0.3) : Color.clear)
-                                .cornerRadius(16)
+                                .frame(width: 30, height: 30)
+                                .background(Color.black.opacity(0.3))
+                                .cornerRadius(15)
                         }
                     }
                     
                 }
                 .padding()
                 
+                if textOverlayStyle == .minimal {
+                    Spacer()
+                }
                 
-                PhoneFrameView {
+                Group {
                     switch step.mediaType {
                     case .image:
                         if let uiImage = UIImage(named: step.mediaSource) {
@@ -199,21 +210,26 @@ public struct OnboardingStepView: View {
                         }
                     case .video:
                         // Use our custom VideoPlayerView for video playback
-                        VideoPlayerView(videoName: step.mediaSource, looping: true)
-                            .aspectRatio(contentMode: .fill)
+                        VideoPlayerView(videoName: step.mediaSource, looping: true, videoAspectRatio: $videoAspectRatio)
+                            .aspectRatio(videoAspectRatio > 0 ? videoAspectRatio : nil, contentMode: .fill)
                     }
                 }
+
+                .frame(width: proposedHeight * videoAspectRatio , height: proposedHeight)
                 
+                .clipShape(RoundedRectangle(cornerRadius: 45))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 45)
+                        .stroke(Color.black, lineWidth: 2)
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
+                
+                if textOverlayStyle != .minimal {
+                    Spacer()
+                }
             }
             
-//
-//            // Use the MediaType.view method to display the appropriate media
-//            step.mediaType.view(source: step.mediaSource)
-//            
-//            // Phone frame positioned to extend below text area
-                
-//                .offset(y: -UIScreen.main.bounds.height * 0.05) // Move phone frame up slightly
-            
+
             // Gradient overlay for text area - only shown in standard style
             if textOverlayStyle == .standard {
                 VStack {
@@ -317,7 +333,9 @@ public struct OnboardingStepView: View {
                             Button(action: onPrevious) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "chevron.left")
-                                    Text(previousButtonText)
+                                    if textOverlayStyle != .minimal {
+                                        Text(previousButtonText)
+                                    }
                                 }
                                 .font(buttonFont)
                                 .fontWeight(.medium)
@@ -337,7 +355,9 @@ public struct OnboardingStepView: View {
                         // Right side: Next/Get Started button
                         Button(action: onNext) {
                             HStack(spacing: 8) {
-                                Text(step.isLastStep ? getStartedButtonText : nextButtonText)
+                                if textOverlayStyle != .minimal {
+                                    Text(step.isLastStep ? getStartedButtonText : nextButtonText)
+                                }
                                 Image(systemName: step.isLastStep ? "arrow.right.circle.fill" : "chevron.right")
                                     .font(.system(size: 18))
                             }

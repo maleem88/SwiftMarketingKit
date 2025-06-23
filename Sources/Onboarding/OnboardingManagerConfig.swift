@@ -17,7 +17,7 @@ public class OnboardingManagerConfig {
     private var primaryColor: Color = .blue
     private var secondaryColor: Color = .gray
     private var titleFont: Font = .title
-    private var descriptionFont: Font = .body
+    private var descriptionFont: Font = .headline
     private var buttonFont: Font = .headline
     private var progressIndicatorStyle: ProgressIndicatorStyle = .dots
     private var phoneFrameEnabled: Bool = true

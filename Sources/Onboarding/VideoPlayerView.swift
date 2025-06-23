@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVKit
+import Combine
 
 /// A SwiftUI view that plays video content from the app bundle
 public struct VideoPlayerView: UIViewControllerRepresentable {
@@ -14,17 +15,22 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
     public let videoName: String
     /// Whether the video should loop continuously
     public let looping: Bool
+    /// The aspect ratio of the video content (width / height)
+    @Binding public var videoAspectRatio: CGFloat
     
     /// Creates a new video player view
-    public init(videoName: String, looping: Bool = true) {
+    public init(videoName: String, looping: Bool = true, videoAspectRatio: Binding<CGFloat> = .constant(0)) {
         self.videoName = videoName
         self.looping = looping
+        self._videoAspectRatio = videoAspectRatio
     }
     
     // Coordinator to track state between updates
     public class Coordinator: NSObject {
         var lastVideoName: String = ""
         weak var currentPlayer: AVPlayer?
+        var videoAspectRatioBinding: Binding<CGFloat>?
+        var cancellables = Set<AnyCancellable>()
         
         @objc func playerItemDidReachEnd(_ notification: Notification) {
             // Simply seek back to the beginning and play again
@@ -39,7 +45,9 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
     }
     
     public func makeCoordinator() -> Coordinator {
-        Coordinator()
+        let coordinator = Coordinator()
+        coordinator.videoAspectRatioBinding = $videoAspectRatio
+        return coordinator
     }
     
     public func makeUIViewController(context: Context) -> AVPlayerViewController {
@@ -57,7 +65,21 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
         // Configure player
         controller.player = player
         controller.showsPlaybackControls = false
-        controller.videoGravity = .resizeAspect // Changed to resizeAspect to maintain aspect ratio
+        controller.videoGravity = .resizeAspectFill // Use resizeAspectFill to fill the available space while maintaining aspect ratio
+        
+        // Get the video's natural size when the item is ready to play
+        player.currentItem?.publisher(for: \.status)
+            .filter { $0 == .readyToPlay }
+            .sink { _ in
+                if let item = player.currentItem, let track = item.asset.tracks(withMediaType: .video).first {
+                    let size = track.naturalSize.applying(track.preferredTransform)
+                    let aspectRatio = abs(size.width / size.height)
+                    DispatchQueue.main.async {
+                        context.coordinator.videoAspectRatioBinding?.wrappedValue = aspectRatio
+                    }
+                }
+            }
+            .store(in: &context.coordinator.cancellables)
         
         // Store the player in the coordinator for looping
         context.coordinator.currentPlayer = player
@@ -108,6 +130,20 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
             uiViewController.player = player
             uiViewController.showsPlaybackControls = false
             
+            // Get the video's natural size when the item is ready to play
+            player.currentItem?.publisher(for: \.status)
+                .filter { $0 == .readyToPlay }
+                .sink {  _ in
+                    if let item = player.currentItem, let track = item.asset.tracks(withMediaType: .video).first {
+                        let size = track.naturalSize.applying(track.preferredTransform)
+                        let aspectRatio = abs(size.width / size.height)
+                        DispatchQueue.main.async {
+                            context.coordinator.videoAspectRatioBinding?.wrappedValue = aspectRatio
+                        }
+                    }
+                }
+                .store(in: &context.coordinator.cancellables)
+            
             // Store the player in the coordinator for looping
             context.coordinator.currentPlayer = player
             
@@ -142,5 +178,8 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
         
         // Remove notification observers
         NotificationCenter.default.removeObserver(coordinator)
+        
+        // Cancel all subscriptions
+        coordinator.cancellables.removeAll()
     }
 }
