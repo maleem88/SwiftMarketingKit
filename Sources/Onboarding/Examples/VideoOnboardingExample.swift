@@ -78,6 +78,9 @@ struct VideoOnboardingView: View {
                     // Skip the entire onboarding
                     onDismiss()
                 },
+                onDidFinish: {
+                    onDismiss()
+                },
                 // Customize the appearance
                 primaryColor: .blue,
                 secondaryColor: .gray.opacity(0.7),

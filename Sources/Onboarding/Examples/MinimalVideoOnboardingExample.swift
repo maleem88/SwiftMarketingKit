@@ -78,6 +78,7 @@ public struct MinimalVideoOnboardingExample: View {
                 onNext: {},
                 onPrevious: {},
                 onSkip: {},
+                onDidFinish: {},
                 primaryColor: .blue,
                 textOverlayStyle: .standard
             )
@@ -98,6 +99,7 @@ public struct MinimalVideoOnboardingExample: View {
                 onNext: {},
                 onPrevious: {},
                 onSkip: {},
+                onDidFinish: {},
                 primaryColor: .blue,
                 textOverlayStyle: .minimal
             )

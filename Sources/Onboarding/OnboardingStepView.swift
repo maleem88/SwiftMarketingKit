@@ -11,6 +11,7 @@ import SwiftUI
 public struct OnboardingStepView: View {
     // MARK: - State
     @State private var videoAspectRatio: CGFloat = 8 / 16.0
+    @State private var imageAspectRatio: CGFloat = 0
     // MARK: - Required Properties
     /// The onboarding step to display
     public let step: OnboardingStep
@@ -22,6 +23,7 @@ public struct OnboardingStepView: View {
     public let onPrevious: () -> Void
     /// Action to perform when the skip button is tapped
     public let onSkip: () -> Void
+    public let onDidFinish: () -> Void
     
     // MARK: - Customization Properties
     /// Primary color for buttons and highlights
@@ -59,13 +61,15 @@ public struct OnboardingStepView: View {
         isFirstStep: Bool, 
         onNext: @escaping () -> Void, 
         onPrevious: @escaping () -> Void, 
-        onSkip: @escaping () -> Void
+        onSkip: @escaping () -> Void,
+        onDidFinish: @escaping () -> Void
     ) {
         self.step = step
         self.isFirstStep = isFirstStep
         self.onNext = onNext
         self.onPrevious = onPrevious
         self.onSkip = onSkip
+        self.onDidFinish = onDidFinish
         
         // Default values
         self.primaryColor = .blue
@@ -91,6 +95,7 @@ public struct OnboardingStepView: View {
         onNext: @escaping () -> Void, 
         onPrevious: @escaping () -> Void, 
         onSkip: @escaping () -> Void,
+        onDidFinish: @escaping () -> Void,
         primaryColor: Color = .blue,
         secondaryColor: Color = .gray,
         titleFont: Font = .title2,
@@ -111,6 +116,7 @@ public struct OnboardingStepView: View {
         self.onNext = onNext
         self.onPrevious = onPrevious
         self.onSkip = onSkip
+        self.onDidFinish = onDidFinish
         
         self.primaryColor = primaryColor
         self.secondaryColor = secondaryColor
@@ -189,9 +195,14 @@ public struct OnboardingStepView: View {
                     switch step.mediaType {
                     case .image:
                         if let uiImage = UIImage(named: step.mediaSource) {
+                            let _ = DispatchQueue.main.async {
+                                // Calculate and store the image aspect ratio
+                                self.imageAspectRatio = uiImage.size.width / uiImage.size.height
+                            }
+                            
                             Image(uiImage: uiImage)
                                 .resizable()
-                                .scaledToFit()
+                                .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fill)
                                 
                         } else {
                             // Fallback to a gradient background if image is not found
@@ -215,7 +226,7 @@ public struct OnboardingStepView: View {
                     }
                 }
 
-                .frame(width: proposedHeight * videoAspectRatio , height: proposedHeight)
+                .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
                 
                 .clipShape(RoundedRectangle(cornerRadius: 45))
                 .overlay(
@@ -353,7 +364,14 @@ public struct OnboardingStepView: View {
                         Spacer()
                         
                         // Right side: Next/Get Started button
-                        Button(action: onNext) {
+                        Button {
+                            if step.isLastStep {
+                                onDidFinish()
+                            } else {
+                                onNext()
+                            }
+                            
+                        } label: {
                             HStack(spacing: 8) {
                                 if textOverlayStyle != .minimal {
                                     Text(step.isLastStep ? getStartedButtonText : nextButtonText)
@@ -420,6 +438,7 @@ public struct OnboardingStepView: View {
             onNext: {},
             onPrevious: {},
             onSkip: {},
+            onDidFinish: {},
             primaryColor: .blue,
 //            progressIndicatorStyle: .bar,
             textOverlayStyle: .minimal

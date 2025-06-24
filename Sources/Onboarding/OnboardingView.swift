@@ -48,7 +48,10 @@ public struct OnboardingView: View {
                     dismiss()
                     viewModel.skipOnboarding()
                 },
-                
+                onDidFinish: {
+                    dismiss()
+                    viewModel.nextStep()
+                },
                 // Pass configuration values from view model
                 primaryColor: viewModel.primaryColor,
                 secondaryColor: viewModel.secondaryColor,
