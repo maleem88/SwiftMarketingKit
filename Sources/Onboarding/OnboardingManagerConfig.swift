@@ -33,6 +33,7 @@ public class OnboardingManagerConfig {
     private var showProgressIndicator: Bool = true
     private var enableSwipeNavigation: Bool = true
     private var autoPlayVideos: Bool = true
+    private var textOverlayStyle: TextOverlayStyle = .minimal
     
     // MARK: - Initialization
     private init() {}
@@ -49,6 +50,7 @@ public class OnboardingManagerConfig {
     public enum TextOverlayStyle {
         case standard
         case minimal
+        case cropped
     }
     
     // MARK: - Public Configuration Methods
@@ -71,6 +73,12 @@ public class OnboardingManagerConfig {
     @discardableResult
     public func setBackgroundColor(_ color: Color) -> Self {
         self.backgroundColor = color
+        return self
+    }
+    
+    @discardableResult
+    public func setTextOverlayStyle(_ style: TextOverlayStyle) -> Self {
+        self.textOverlayStyle = style
         return self
     }
     
@@ -281,6 +289,10 @@ public class OnboardingManagerConfig {
     
     func getProgressIndicatorStyle() -> ProgressIndicatorStyle {
         return progressIndicatorStyle
+    }
+    
+    func getTextOverlayStyle() -> TextOverlayStyle {
+        return textOverlayStyle
     }
     
     func isPhoneFrameEnabled() -> Bool {

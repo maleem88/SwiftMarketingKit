@@ -153,6 +153,11 @@ public class OnboardingViewModel: ObservableObject {
         return config.getProgressIndicatorStyle()
     }
     
+    /// Get the progress indicator style
+    public var textOverlayStyle: OnboardingManagerConfig.TextOverlayStyle {
+        return config.getTextOverlayStyle()
+    }
+    
     /// Check if phone frame is enabled
     public var isPhoneFrameEnabled: Bool {
         return config.isPhoneFrameEnabled()

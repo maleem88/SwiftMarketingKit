@@ -26,16 +26,27 @@ public struct OnboardingStep: Identifiable, Equatable {
     public let mediaSource: String
     
     /// Whether this is the final step in the sequence
-    public let isLastStep: Bool
+    public var isLastStep: Bool
     
     /// The current index of this step in the sequence
-    public let currentStepIndex: Int
+    public var currentStepIndex: Int
     
     /// The total number of steps in the sequence
-    public let totalSteps: Int
+    public var totalSteps: Int
+    
+    
     
     /// Creates a new onboarding step
-    public init(id: String, title: String, description: String, mediaType: MediaType, mediaSource: String, isLastStep: Bool, currentStepIndex: Int, totalSteps: Int) {
+    public init(
+        id: String = UUID().uuidString,
+        title: String,
+        description: String,
+        mediaType: MediaType,
+        mediaSource: String,
+        isLastStep: Bool = false,
+        currentStepIndex: Int = 0,
+        totalSteps: Int = 0
+    ) {
         self.id = id
         self.title = title
         self.description = description

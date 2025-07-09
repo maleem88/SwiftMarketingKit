@@ -20,7 +20,10 @@ public struct OnboardingView: View {
     }
     
     /// Creates an onboarding view with custom steps
-    public init(steps: [OnboardingStep], config: OnboardingManagerConfig = OnboardingManagerConfig.shared) {
+    public init(
+        steps: [OnboardingStep],
+        config: OnboardingManagerConfig = OnboardingManagerConfig.shared
+    ) {
         self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(steps: steps, config: config))
     }
     
@@ -65,11 +68,15 @@ public struct OnboardingView: View {
                 showSkipButton: viewModel.shouldShowSkipButton,
                 showProgressIndicator: viewModel.shouldShowProgressIndicator,
                 progressIndicatorStyle: viewModel.progressIndicatorStyle,
-                textOverlayStyle: .minimal,
+                textOverlayStyle: viewModel.textOverlayStyle,
                 enableSwipeNavigation: viewModel.isSwipeNavigationEnabled
                 
             )
             .animation(.easeInOut, value: viewModel.currentStepIndex)
+        }
+        .onDisappear {
+            // Clean up video resources when the view disappears
+            NotificationCenter.default.post(name: NSNotification.Name("OnboardingViewDismissed"), object: nil)
         }
     }
 }

@@ -53,6 +53,20 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
     public func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         
+        // Add observer for when onboarding view is dismissed
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("OnboardingViewDismissed"),
+            object: nil,
+            queue: .main
+        ) { [weak controller] _ in
+            // Clean up resources when onboarding view is dismissed
+            guard let controller = controller else { return }
+            if let player = controller.player {
+                player.pause()
+                player.replaceCurrentItem(with: nil)
+            }
+        }
+        
         // Find the video in the app bundle
         guard let path = Bundle.main.path(forResource: videoName, ofType: "mp4") else {
             print("Error: Could not find video file named \(videoName)")

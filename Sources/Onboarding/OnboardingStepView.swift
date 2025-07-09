@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+
+
 /// A view that displays a single step in the onboarding process
 public struct OnboardingStepView: View {
     // MARK: - State
@@ -139,272 +141,443 @@ public struct OnboardingStepView: View {
     }
     
     public var body: some View {
-        ZStack {
-            // Background is transparent to allow parent view to set the background
-            Color.clear
-                .ignoresSafeArea()
-            
-            VStack {
-                
-                
-                ZStack(alignment: .topTrailing) {
-                    if textOverlayStyle == .minimal {
+        
+        Group {
+            if textOverlayStyle == .cropped {
+                VStack(alignment: .leading) {
+                        
+                        if showSkipButton {
+                            HStack {
+                                Spacer()
+                                Button(action: onSkip) {
+                                    Image(systemName: "xmark")
+            //                            Text(skipButtonText)
+            //                                .font(buttonFont)
+            //                                .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                        .frame(width: 30, height: 30)
+                                        .background(Color.black.opacity(0.3))
+                                        .cornerRadius(15)
+                                }
+                            }
+                            
+                        }
+                        
+                        Spacer()
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(step.title)
                                 .font(titleFont.bold())
+                                .multilineTextAlignment(.leading)
                             //                            .foregroundColor(.white)
-//                                .multilineTextAlignment(.leading)
-//                                .lineLimit(3)
+                            //                                .multilineTextAlignment(.leading)
+                            //                                .lineLimit(3)
                             
                             
                             Text(step.description)
                                 .font(descriptionFont)
                                 .foregroundStyle(Color.gray)
+                                .multilineTextAlignment(.leading)
                             //                            .foregroundColor(.white.opacity(0.9))
-//                                .multilineTextAlignment(.leading)
-//                                                        .lineLimit(3)
+                            //                                .multilineTextAlignment(.leading)
+                            //                                                        .lineLimit(3)
                         }
-                        .padding(.horizontal, 12)
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    
-                    
-                    if showSkipButton {
-                        Button(action: onSkip) {
-                            Image(systemName: "xmark")
-//                            Text(skipButtonText)
-//                                .font(buttonFont)
-//                                .fontWeight(.medium)
-                                .foregroundColor(textOverlayStyle == .standard ? .white : .white)
-                                .frame(width: 30, height: 30)
-                                .background(Color.black.opacity(0.3))
-                                .cornerRadius(15)
-                        }
-                    }
-                    
-                }
-                .padding()
-                
-                if textOverlayStyle == .minimal {
-                    Spacer()
-                }
-                
-                Group {
-                    switch step.mediaType {
-                    case .image:
-                        if let uiImage = UIImage(named: step.mediaSource) {
-                            let _ = DispatchQueue.main.async {
-                                // Calculate and store the image aspect ratio
-                                self.imageAspectRatio = uiImage.size.width / uiImage.size.height
-                            }
+                        .padding(.horizontal, 4)
                             
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fill)
+                            if let uiImage = UIImage(named: step.mediaSource) {
+                                let _ = DispatchQueue.main.async {
+                                    // Calculate and store the image aspect ratio
+                                    self.imageAspectRatio = uiImage.size.width / uiImage.size.height
+                                }
                                 
-                        } else {
-                            // Fallback to a gradient background if image is not found
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .overlay(
-                                Image(systemName: "photo")
+                                
+                                Image(uiImage: uiImage)
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 80, height: 80)
-                                    .foregroundColor(.white.opacity(0.8))
-                            )
-                        }
-                    case .video:
-                        // Use our custom VideoPlayerView for video playback
-                        VideoPlayerView(videoName: step.mediaSource, looping: true, videoAspectRatio: $videoAspectRatio)
-                            .aspectRatio(videoAspectRatio > 0 ? videoAspectRatio : nil, contentMode: .fill)
-                    }
-                }
-
-                .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
-                
-                .clipShape(RoundedRectangle(cornerRadius: 45))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 45)
-                        .stroke(Color.black, lineWidth: 2)
-                )
-                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
-                
-                if textOverlayStyle != .minimal {
-                    Spacer()
-                }
-            }
-            
-
-            // Gradient overlay for text area - only shown in standard style
-            if textOverlayStyle == .standard {
-                VStack {
-                    Spacer()
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Color.black.opacity(0), location: 0),
-                            .init(color: Color.black.opacity(0.7), location: 0.3),
-                            .init(color: Color.black.opacity(0.9), location: 0.6),
-                            .init(color: Color.black.opacity(1), location: 1)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: UIScreen.main.bounds.height * 0.4) // Text area height
-                }
-                .ignoresSafeArea()
-            }
-            
-            // Content overlay positioned absolutely
-            VStack(spacing: 0) {
-                
-                Spacer()
-                            
-                // Bottom content area with text and controls
-                VStack(spacing: 16) {
-                    if textOverlayStyle == .standard {
-                        Spacer()
-                    }
+                                    .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fit)
+                                    .padding(.top, 30)
+                                
+                            }
+                        
                     
-                    // Progress indicator
-                    if showProgressIndicator {
-                        Group {
-                            switch progressIndicatorStyle {
-                            case .dots:
-                                // Dots style
-                                HStack(spacing: 8) {
-                                    ForEach(0..<step.totalSteps, id: \.self) { index in
-                                        Circle()
-                                            .fill(index == step.currentStepIndex ? Color.white : Color.white.opacity(0.4))
-                                            .frame(width: 8, height: 8)
-                                            .scaleEffect(index == step.currentStepIndex ? 1.2 : 1.0)
-                                            .animation(.spring(), value: step.currentStepIndex)
+                        
+                        Spacer()
+                            // Progress indicator
+                            
+                            
+                            // Navigation buttons in a single row
+                            HStack {
+                                // Left side: Previous button (hidden on first step)
+                                if !isFirstStep {
+                                    Button(action: onPrevious) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "chevron.left")
+                                            if textOverlayStyle != .minimal {
+                                                Text(previousButtonText)
+                                            }
+                                        }
+                                        .font(buttonFont)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            textOverlayStyle == .minimal ?
+                                                Capsule().fill(Color.black.opacity(0.6)) :
+                                                Capsule().fill(Color.black.opacity(0.3))
+                                        )
                                     }
                                 }
-                            case .bar:
-                                // Progress bar style
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        Rectangle()
-                                            .fill(Color.white.opacity(0.3))
+                                
+                                Spacer()
+                                
+                                if showProgressIndicator {
+                                    Group {
+                                        switch progressIndicatorStyle {
+                                        case .dots:
+                                            // Dots style
+                                            HStack(spacing: 8) {
+                                                ForEach(0..<step.totalSteps, id: \.self) { index in
+                                                    Circle()
+                                                        .fill(index == step.currentStepIndex ? Color.gray : Color.gray.opacity(0.4))
+                                                        .frame(width: 8, height: 8)
+                                                        .scaleEffect(index == step.currentStepIndex ? 1.2 : 1.0)
+                                                        .animation(.spring(), value: step.currentStepIndex)
+                                                }
+                                            }
+                                        case .bar:
+                                            // Progress bar style
+                                            GeometryReader { geometry in
+                                                ZStack(alignment: .leading) {
+                                                    Rectangle()
+                                                        .fill(Color.white.opacity(0.3))
+                                                        .frame(height: 4)
+                                                        .cornerRadius(2)
+                                                    
+                                                    Rectangle()
+                                                        .fill(Color.white)
+                                                        .frame(width: geometry.size.width * CGFloat(step.currentStepIndex + 1) / CGFloat(step.totalSteps), height: 4)
+                                                        .cornerRadius(2)
+                                                }
+                                            }
                                             .frame(height: 4)
-                                            .cornerRadius(2)
-                                        
-                                        Rectangle()
-                                            .fill(Color.white)
-                                            .frame(width: geometry.size.width * CGFloat(step.currentStepIndex + 1) / CGFloat(step.totalSteps), height: 4)
-                                            .cornerRadius(2)
+                                            .padding(.horizontal)
+                                        case .numbers:
+                                            // Numeric style
+                                            Text("\(step.currentStepIndex + 1)/\(step.totalSteps)")
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.white)
+                                        case .none:
+                                            EmptyView()
+                                        }
                                     }
+                                    .padding(.bottom, 10)
                                 }
-                                .frame(height: 4)
-                                .padding(.horizontal)
-                            case .numbers:
-                                // Numeric style
-                                Text("\(step.currentStepIndex + 1)/\(step.totalSteps)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
+                                Spacer()
+                                // Right side: Next/Get Started button
+                                Button {
+                                    if step.isLastStep {
+                                        onDidFinish()
+                                    } else {
+                                        onNext()
+                                    }
+                                    
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: step.isLastStep ? "arrow.right.circle.fill" : "chevron.right")
+                                            .font(.system(size: 18))
+                                    }
+                                    .font(buttonFont)
                                     .foregroundColor(.white)
-                            case .none:
-                                EmptyView()
-                            }
-                        }
-                        .padding(.bottom, 10)
-                    }
-                    
-                    // Title and description - only shown in standard style
-                    if textOverlayStyle == .standard {
-                        VStack(spacing: 12) {
-                            Text(step.title)
-                                .font(titleFont)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(.horizontal)
-                            
-                            Text(step.description)
-                                .font(descriptionFont)
-                                .foregroundColor(.white.opacity(0.9))
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(.horizontal, 24)
-                        }
-                        .padding(.bottom, 24)
-                    }
-                    
-                    // Navigation buttons in a single row
-                    HStack {
-                        // Left side: Previous button (hidden on first step)
-                        if !isFirstStep {
-                            Button(action: onPrevious) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "chevron.left")
-                                    if textOverlayStyle != .minimal {
-                                        Text(previousButtonText)
-                                    }
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [primaryColor, primaryColor.opacity(0.8)]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(16)
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                                 }
-                                .font(buttonFont)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    textOverlayStyle == .minimal ? 
-                                        Capsule().fill(Color.black.opacity(0.6)) : 
-                                        Capsule().fill(Color.black.opacity(0.3))
-                                )
+                            }
+                            .padding(.bottom, 20)
+                            
+                        }
+                 
+                    
+                    .padding(.horizontal, 20)
+            } else {
+                ZStack {
+                    // Background is transparent to allow parent view to set the background
+                    Color.clear
+                        .ignoresSafeArea()
+                    
+                    VStack {
+                        
+                        
+                        ZStack(alignment: .topTrailing) {
+                            if textOverlayStyle == .minimal {
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(step.title)
+                                        .font(titleFont.bold())
+                                    //                            .foregroundColor(.white)
+        //                                .multilineTextAlignment(.leading)
+        //                                .lineLimit(3)
+                                    
+                                    
+                                    Text(step.description)
+                                        .font(descriptionFont)
+                                        .foregroundStyle(Color.gray)
+                                    //                            .foregroundColor(.white.opacity(0.9))
+        //                                .multilineTextAlignment(.leading)
+        //                                                        .lineLimit(3)
+                                }
+                                .padding(.horizontal, 12)
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            }
+                            
+                            
+                            
+                            if showSkipButton {
+                                Button(action: onSkip) {
+                                    Image(systemName: "xmark")
+        //                            Text(skipButtonText)
+        //                                .font(buttonFont)
+        //                                .fontWeight(.medium)
+                                        .foregroundColor(textOverlayStyle == .standard ? .white : .white)
+                                        .frame(width: 30, height: 30)
+                                        .background(Color.black.opacity(0.3))
+                                        .cornerRadius(15)
+                                }
+                            }
+                            
+                        }
+                        .padding()
+                        
+                        if textOverlayStyle == .minimal {
+                            Spacer()
+                        }
+                        
+                        Group {
+                            switch step.mediaType {
+                            case .image:
+                                if let uiImage = UIImage(named: step.mediaSource) {
+                                    let _ = DispatchQueue.main.async {
+                                        // Calculate and store the image aspect ratio
+                                        self.imageAspectRatio = uiImage.size.width / uiImage.size.height
+                                    }
+                                    
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fill)
+                                        
+                                } else {
+                                    // Fallback to a gradient background if image is not found
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 80, height: 80)
+                                            .foregroundColor(.white.opacity(0.8))
+                                    )
+                                }
+                            case .video:
+                                // Use our custom VideoPlayerView for video playback
+                                VideoPlayerView(videoName: step.mediaSource, looping: true, videoAspectRatio: $videoAspectRatio)
+                                    .aspectRatio(videoAspectRatio > 0 ? videoAspectRatio : nil, contentMode: .fill)
                             }
                         }
+
+                        .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
+                        
+                        .clipShape(RoundedRectangle(cornerRadius: 45))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 45)
+                                .stroke(Color.black, lineWidth: 2)
+                        )
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
+                        
+                        if textOverlayStyle != .minimal {
+                            Spacer()
+                        }
+                    }
+                    
+
+                    // Gradient overlay for text area - only shown in standard style
+                    if textOverlayStyle == .standard {
+                        VStack {
+                            Spacer()
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: Color.black.opacity(0), location: 0),
+                                    .init(color: Color.black.opacity(0.7), location: 0.3),
+                                    .init(color: Color.black.opacity(0.9), location: 0.6),
+                                    .init(color: Color.black.opacity(1), location: 1)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: UIScreen.main.bounds.height * 0.4) // Text area height
+                        }
+                        .ignoresSafeArea()
+                    }
+                    
+                    // Content overlay positioned absolutely
+                    VStack(spacing: 0) {
                         
                         Spacer()
-                        
-                        // Right side: Next/Get Started button
-                        Button {
-                            if step.isLastStep {
-                                onDidFinish()
-                            } else {
-                                onNext()
+                                    
+                        // Bottom content area with text and controls
+                        VStack(spacing: 16) {
+                            if textOverlayStyle == .standard {
+                                Spacer()
                             }
                             
-                        } label: {
-                            HStack(spacing: 8) {
-                                if textOverlayStyle != .minimal {
-                                    Text(step.isLastStep ? getStartedButtonText : nextButtonText)
+                            // Progress indicator
+                            if showProgressIndicator {
+                                Group {
+                                    switch progressIndicatorStyle {
+                                    case .dots:
+                                        // Dots style
+                                        HStack(spacing: 8) {
+                                            ForEach(0..<step.totalSteps, id: \.self) { index in
+                                                Circle()
+                                                    .fill(index == step.currentStepIndex ? Color.white : Color.white.opacity(0.4))
+                                                    .frame(width: 8, height: 8)
+                                                    .scaleEffect(index == step.currentStepIndex ? 1.2 : 1.0)
+                                                    .animation(.spring(), value: step.currentStepIndex)
+                                            }
+                                        }
+                                    case .bar:
+                                        // Progress bar style
+                                        GeometryReader { geometry in
+                                            ZStack(alignment: .leading) {
+                                                Rectangle()
+                                                    .fill(Color.white.opacity(0.3))
+                                                    .frame(height: 4)
+                                                    .cornerRadius(2)
+                                                
+                                                Rectangle()
+                                                    .fill(Color.white)
+                                                    .frame(width: geometry.size.width * CGFloat(step.currentStepIndex + 1) / CGFloat(step.totalSteps), height: 4)
+                                                    .cornerRadius(2)
+                                            }
+                                        }
+                                        .frame(height: 4)
+                                        .padding(.horizontal)
+                                    case .numbers:
+                                        // Numeric style
+                                        Text("\(step.currentStepIndex + 1)/\(step.totalSteps)")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.white)
+                                    case .none:
+                                        EmptyView()
+                                    }
                                 }
-                                Image(systemName: step.isLastStep ? "arrow.right.circle.fill" : "chevron.right")
-                                    .font(.system(size: 18))
+                                .padding(.bottom, 10)
                             }
-                            .font(buttonFont)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 16)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [primaryColor, primaryColor.opacity(0.8)]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                            
+                            // Title and description - only shown in standard style
+                            if textOverlayStyle == .standard {
+                                VStack(spacing: 12) {
+                                    Text(step.title)
+                                        .font(titleFont)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(.horizontal)
+                                    
+                                    Text(step.description)
+                                        .font(descriptionFont)
+                                        .foregroundColor(.white.opacity(0.9))
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(.horizontal, 24)
+                                }
+                                .padding(.bottom, 24)
+                            }
+                            
+                            // Navigation buttons in a single row
+                            HStack {
+                                // Left side: Previous button (hidden on first step)
+                                if !isFirstStep {
+                                    Button(action: onPrevious) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "chevron.left")
+                                            if textOverlayStyle != .minimal {
+                                                Text(previousButtonText)
+                                            }
+                                        }
+                                        .font(buttonFont)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            textOverlayStyle == .minimal ?
+                                                Capsule().fill(Color.black.opacity(0.6)) :
+                                                Capsule().fill(Color.black.opacity(0.3))
+                                        )
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                // Right side: Next/Get Started button
+                                Button {
+                                    if step.isLastStep {
+                                        onDidFinish()
+                                    } else {
+                                        onNext()
+                                    }
+                                    
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        if textOverlayStyle != .minimal {
+                                            Text(step.isLastStep ? getStartedButtonText : nextButtonText)
+                                        }
+                                        Image(systemName: step.isLastStep ? "arrow.right.circle.fill" : "chevron.right")
+                                            .font(.system(size: 18))
+                                    }
+                                    .font(buttonFont)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [primaryColor, primaryColor.opacity(0.8)]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(16)
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, textOverlayStyle == .minimal ? 16 : 20)
                         }
+                        .frame(maxWidth: .infinity)
+                        
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, textOverlayStyle == .minimal ? 16 : 20)
+        //            .padding(.vertical)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
             }
-//            .padding(.vertical)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .gesture(
-            enableSwipeNavigation ? 
+            enableSwipeNavigation ?
             DragGesture(minimumDistance: 20, coordinateSpace: .local)
                 .onEnded { value in
                     if value.translation.width > 0 && !isFirstStep {
@@ -416,6 +589,9 @@ public struct OnboardingStepView: View {
                     }
                 } : nil
         )
+        
+        
+        
     }
 }
 
