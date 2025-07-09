@@ -35,17 +35,9 @@ public class OnboardingViewModel: ObservableObject {
     public var currentStep: OnboardingStep {
         // Create a new step with the updated currentStepIndex
         var step = steps[currentStepIndex]
-        // This ensures the step always has the correct currentStepIndex
-        return OnboardingStep(
-            id: step.id,
-            title: step.title,
-            description: step.description,
-            mediaType: step.mediaType,
-            mediaSource: step.mediaSource,
-            isLastStep: step.isLastStep,
-            currentStepIndex: currentStepIndex,
-            totalSteps: steps.count
-        )
+        step.currentStepIndex = currentStepIndex
+        return step
+        
     }
     
     /// Whether the current step is the last one

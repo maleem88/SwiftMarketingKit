@@ -19,11 +19,15 @@ public struct OnboardingStep: Identifiable, Equatable {
     /// Descriptive text explaining the feature or concept
     public let description: String
     
-    /// Type of media to display (image or video)
+    /// Type of media to display (image, video, or custom view)
     public let mediaType: MediaType
     
     /// Source identifier for the media (image name or video name)
+    /// Not used when mediaType is .customView
     public let mediaSource: String
+    
+    /// Custom SwiftUI view to display when mediaType is .customView
+    public let customView: AnyView?
     
     /// Whether this is the final step in the sequence
     public var isLastStep: Bool
@@ -36,7 +40,7 @@ public struct OnboardingStep: Identifiable, Equatable {
     
     
     
-    /// Creates a new onboarding step
+    /// Creates a new onboarding step with image or video media
     public init(
         id: String = UUID().uuidString,
         title: String,
@@ -52,9 +56,32 @@ public struct OnboardingStep: Identifiable, Equatable {
         self.description = description
         self.mediaType = mediaType
         self.mediaSource = mediaSource
+        self.customView = nil
         self.isLastStep = isLastStep
         self.currentStepIndex = currentStepIndex
         self.totalSteps = totalSteps
+    }
+    
+    /// Creates a new onboarding step with a custom SwiftUI view
+    public init<V: CustomOnboardingView>(
+        id: String = UUID().uuidString,
+        title: String,
+        description: String,
+        customView: V,
+        isLastStep: Bool = false,
+        currentStepIndex: Int = 0,
+        totalSteps: Int = 0
+    ) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.mediaType = .customView
+        self.mediaSource = ""
+        self.customView = AnyView(customView)
+        self.isLastStep = isLastStep
+        self.currentStepIndex = currentStepIndex
+        self.totalSteps = totalSteps
+        
     }
     
     public static func == (lhs: OnboardingStep, rhs: OnboardingStep) -> Bool {
@@ -71,6 +98,8 @@ public enum MediaType {
     case image
     /// Video media type for more engaging content
     case video
+    /// Custom SwiftUI view for complete customization
+    case customView
     
     /// Returns the appropriate view for the media type
 //    @ViewBuilder

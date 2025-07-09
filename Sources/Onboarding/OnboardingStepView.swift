@@ -163,7 +163,7 @@ public struct OnboardingStepView: View {
                             
                         }
                         
-                        Spacer()
+                        
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(step.title)
@@ -183,20 +183,36 @@ public struct OnboardingStepView: View {
                             //                                                        .lineLimit(3)
                         }
                         .padding(.horizontal, 4)
-                            
-                            if let uiImage = UIImage(named: step.mediaSource) {
-                                let _ = DispatchQueue.main.async {
-                                    // Calculate and store the image aspect ratio
-                                    self.imageAspectRatio = uiImage.size.width / uiImage.size.height
-                                }
-                                
-                                
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fit)
-                                    .padding(.top, 30)
-                                
+                    Spacer()
+                    switch step.mediaType {
+                    case .image:
+                        if let uiImage = UIImage(named: step.mediaSource) {
+                            let _ = DispatchQueue.main.async {
+                                // Calculate and store the image aspect ratio
+                                self.imageAspectRatio = uiImage.size.width / uiImage.size.height
                             }
+                            
+                            
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fit)
+                                .padding(.top, 30)
+                            
+                        }
+                    
+                    case .customView:
+                        if let customView = step.customView {
+                            customView                                
+                        } else {
+                            // Fallback if custom view is nil
+                            Text("Custom view not provided")
+                                .foregroundColor(.red)
+                        }
+                        
+                    default:
+                        Text("Video is not supported yet.")
+                    }
+                            
                         
                     
                         
@@ -365,19 +381,27 @@ public struct OnboardingStepView: View {
                             switch step.mediaType {
                             case .image:
                                 if let uiImage = UIImage(named: step.mediaSource) {
-                                    let _ = DispatchQueue.main.async {
-                                        // Calculate and store the image aspect ratio
-                                        self.imageAspectRatio = uiImage.size.width / uiImage.size.height
-                                    }
-                                    
                                     Image(uiImage: uiImage)
                                         .resizable()
-                                        .aspectRatio(imageAspectRatio > 0 ? imageAspectRatio : nil, contentMode: .fill)
+                                        .aspectRatio(contentMode: .fit)
+                                        .onAppear {
+                                            if let image = UIImage(named: step.mediaSource) {
+                                                let aspectRatio = image.size.width / image.size.height
+                                                imageAspectRatio = aspectRatio
+                                            }
+                                        }
+                                        .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
                                         
+                                        .clipShape(RoundedRectangle(cornerRadius: 45))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 45)
+                                                .stroke(Color.black, lineWidth: 2)
+                                        )
+                                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
                                 } else {
-                                    // Fallback to a gradient background if image is not found
+                                    // Fallback gradient if image not found
                                     LinearGradient(
-                                        gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.7)]),
+                                        gradient: Gradient(colors: [primaryColor.opacity(0.7), primaryColor.opacity(0.3)]),
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -390,20 +414,34 @@ public struct OnboardingStepView: View {
                                     )
                                 }
                             case .video:
-                                // Use our custom VideoPlayerView for video playback
+                                // Video player
                                 VideoPlayerView(videoName: step.mediaSource, looping: true, videoAspectRatio: $videoAspectRatio)
-                                    .aspectRatio(videoAspectRatio > 0 ? videoAspectRatio : nil, contentMode: .fill)
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
+                                    
+                                    .clipShape(RoundedRectangle(cornerRadius: 45))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 45)
+                                            .stroke(Color.black, lineWidth: 2)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
+                                
+                            case .customView:
+                                // Custom SwiftUI view
+                                if let customView = step.customView {
+                                    customView
+                                        .onAppear {
+                                            // Default aspect ratio for custom views
+                                            videoAspectRatio = 9 / 16.0
+                                        }
+                                } else {
+                                    // Fallback if custom view is nil
+                                    Text("Custom view not provided")
+                                        .foregroundColor(.red)
+                                }
                             }
                         }
-
-                        .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
                         
-                        .clipShape(RoundedRectangle(cornerRadius: 45))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 45)
-                                .stroke(Color.black, lineWidth: 2)
-                        )
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 2)
                         
                         if textOverlayStyle != .minimal {
                             Spacer()

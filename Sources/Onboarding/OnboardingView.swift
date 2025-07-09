@@ -25,6 +25,73 @@ public struct OnboardingView: View {
         config: OnboardingManagerConfig = OnboardingManagerConfig.shared
     ) {
         self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(steps: steps, config: config))
+        
+    }
+    
+    /// Creates an onboarding view with a mix of standard steps and a custom SwiftUI view
+    public init<V: CustomOnboardingView>(
+        steps: [OnboardingStep],
+        customView: V,
+        customViewPosition: Int,
+        customViewTitle: String,
+        customViewDescription: String,
+        isLastStep: Bool = false,
+        config: OnboardingManagerConfig = OnboardingManagerConfig.shared
+    ) {
+        // Create a copy of the steps array
+        var modifiedSteps = steps
+        
+        // Create a custom step with the provided SwiftUI view
+        let customStep = OnboardingStep(
+            title: customViewTitle,
+            description: customViewDescription,
+            customView: customView,
+            isLastStep: isLastStep
+        )
+        
+        // Insert the custom step at the specified position, or append if position is out of bounds
+        if customViewPosition >= 0 && customViewPosition <= steps.count {
+            modifiedSteps.insert(customStep, at: customViewPosition)
+        } else {
+            modifiedSteps.append(customStep)
+        }
+        
+        // Update the step indices and isLastStep property
+        for i in 0..<modifiedSteps.count {
+            var step = modifiedSteps[i]
+            step.currentStepIndex = i
+            step.totalSteps = modifiedSteps.count
+            step.isLastStep = (i == modifiedSteps.count - 1) ? true : step.isLastStep
+            modifiedSteps[i] = step
+        }
+        
+        self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(steps: modifiedSteps, config: config))
+    }
+    
+    // Removed the separate customSteps parameter initializer to simplify the API
+    
+    /// Creates an onboarding view with a custom SwiftUI view as a step
+    public init<V: View>(
+        customView: V,
+        title: String = "",
+        description: String = "",
+        isLastStep: Bool = true,
+        config: OnboardingManagerConfig = OnboardingManagerConfig.shared
+    ) {
+        // Create a wrapper for the custom view to conform to CustomOnboardingView
+        let wrappedView = CustomViewWrapper(content: customView)
+        
+        // Create a single step with the custom view
+        let step = OnboardingStep(
+            title: title,
+            description: description,
+            customView: wrappedView,
+            isLastStep: isLastStep,
+            currentStepIndex: 0,
+            totalSteps: 1
+        )
+        
+        self._viewModel = ObservedObject(wrappedValue: OnboardingViewModel(steps: [step], config: config))
     }
     
     /// Creates an onboarding view with a custom view model
