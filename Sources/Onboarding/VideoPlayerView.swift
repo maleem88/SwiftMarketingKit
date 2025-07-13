@@ -79,7 +79,7 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
         // Configure player
         controller.player = player
         controller.showsPlaybackControls = false
-        controller.videoGravity = .resizeAspectFill // Use resizeAspectFill to fill the available space while maintaining aspect ratio
+        controller.videoGravity = .resizeAspect // Use resizeAspect to maintain the correct aspect ratio
         
         // Get the video's natural size when the item is ready to play
         player.currentItem?.publisher(for: \.status)
@@ -143,20 +143,34 @@ public struct VideoPlayerView: UIViewControllerRepresentable {
             // Configure player
             uiViewController.player = player
             uiViewController.showsPlaybackControls = false
+            uiViewController.videoGravity = .resizeAspect // Use resizeAspect to maintain the correct aspect ratio
             
             // Get the video's natural size when the item is ready to play
-            player.currentItem?.publisher(for: \.status)
-                .filter { $0 == .readyToPlay }
-                .sink {  _ in
-                    if let item = player.currentItem, let track = item.asset.tracks(withMediaType: .video).first {
-                        let size = track.naturalSize.applying(track.preferredTransform)
-                        let aspectRatio = abs(size.width / size.height)
-                        DispatchQueue.main.async {
-                            context.coordinator.videoAspectRatioBinding?.wrappedValue = aspectRatio
-                        }
+            if let currentItem = player.currentItem {
+                // First check if the item is already ready to play
+                if currentItem.status == .readyToPlay, let track = currentItem.asset.tracks(withMediaType: .video).first {
+                    let size = track.naturalSize.applying(track.preferredTransform)
+                    let aspectRatio = abs(size.width / size.height)
+                    DispatchQueue.main.async {
+                        context.coordinator.videoAspectRatioBinding?.wrappedValue = aspectRatio
                     }
+                } else {
+                    // Otherwise set up the publisher to listen for status changes
+                    currentItem.publisher(for: \.status)
+                        .filter { $0 == .readyToPlay }
+                        .sink { [weak player] _ in
+                            guard let player = player, let item = player.currentItem else { return }
+                            if let track = item.asset.tracks(withMediaType: .video).first {
+                                let size = track.naturalSize.applying(track.preferredTransform)
+                                let aspectRatio = abs(size.width / size.height)
+                                DispatchQueue.main.async {
+                                    context.coordinator.videoAspectRatioBinding?.wrappedValue = aspectRatio
+                                }
+                            }
+                        }
+                        .store(in: &context.coordinator.cancellables)
                 }
-                .store(in: &context.coordinator.cancellables)
+            }
             
             // Store the player in the coordinator for looping
             context.coordinator.currentPlayer = player

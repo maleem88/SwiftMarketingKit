@@ -417,8 +417,7 @@ public struct OnboardingStepView: View {
                                 // Video player
                                 VideoPlayerView(videoName: step.mediaSource, looping: true, videoAspectRatio: $videoAspectRatio)
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: proposedHeight * (step.mediaType == .video ? videoAspectRatio : (imageAspectRatio > 0 ? imageAspectRatio : 16/9)) , height: proposedHeight)
-                                    
+                                    .frame(width: videoAspectRatio > 0 ? proposedHeight * videoAspectRatio : proposedHeight * (16/9), height: proposedHeight)
                                     .clipShape(RoundedRectangle(cornerRadius: 45))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 45)
